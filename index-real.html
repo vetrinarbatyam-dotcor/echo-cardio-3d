@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>אקו-לב בכלב · הדמיה תלת-מימדית | Canine Echocardiography 3D</title>
+<style>
+  :root{
+    --bg:#070b16; --panel:rgba(14,21,38,.82); --panel-solid:#0e1526;
+    --line:#1d2942; --accent:#34d1bf; --accent2:#6aa6ff; --warn:#ffb454;
+    --txt:#e8eef9; --dim:#9fb0cc; --beam:#ffd24a; --good:#43d17a; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI","Assistant",system-ui,sans-serif}
+  #app{position:fixed;inset:0}
+  canvas#scene{display:block;width:100%;height:100%}
+
+  #topbar{position:absolute;top:0;left:0;right:0;height:58px;display:flex;
+    align-items:center;justify-content:space-between;padding:0 18px;z-index:20;
+    background:linear-gradient(180deg,rgba(7,11,22,.95),rgba(7,11,22,0));pointer-events:none}
+  #topbar .title{pointer-events:auto}
+  #topbar h1{font-size:17px;font-weight:700}
+  #topbar h1 small{color:var(--dim);font-weight:500;font-size:12px;margin-inline-start:8px}
+  .toolbtns{display:flex;gap:8px;pointer-events:auto}
+  .tbtn{background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:9px;padding:7px 12px;font-size:13px;cursor:pointer;backdrop-filter:blur(8px);transition:.15s}
+  .tbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .tbtn.on{background:var(--accent);color:#04221e;border-color:var(--accent);font-weight:700}
+  .tbtn.prim{background:var(--accent2);color:#04122e;border-color:var(--accent2);font-weight:700}
+  .tbtn.prim:hover{color:#04122e;filter:brightness(1.08)}
+
+  /* explanation reference window */
+  #explain{position:absolute;top:66px;right:14px;width:352px;max-height:calc(100% - 230px);
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;
+    z-index:15;backdrop-filter:blur(14px);overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+  #explain h2{font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:2px}
+  #explain .en{color:var(--dim);font-size:12px;font-weight:500;margin-bottom:10px;direction:ltr;text-align:right}
+  .pill{display:inline-block;background:rgba(52,209,191,.14);color:var(--accent);
+    border:1px solid rgba(52,209,191,.35);border-radius:20px;padding:2px 10px;font-size:11px;margin-bottom:8px}
+  .sec{margin:11px 0;padding-top:10px;border-top:1px dashed var(--line)}
+  .sec:first-of-type{border-top:none;padding-top:2px}
+  .sec h3{font-size:12.5px;color:var(--accent2);margin-bottom:5px;display:flex;gap:6px;align-items:center}
+  .sec p,.sec li{font-size:13px;line-height:1.55;color:var(--txt)}
+  .sec ul{padding-inline-start:18px}
+  .sec .ennote{display:block;color:var(--dim);font-size:11px;direction:ltr;text-align:right;margin-top:2px}
+  .dz{display:inline-block;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.3);
+    color:#ffd0d0;border-radius:7px;padding:3px 8px;font-size:11.5px;margin:3px 3px 0 0}
+  .meas{background:rgba(106,166,255,.1);border:1px solid rgba(106,166,255,.28);border-radius:9px;padding:8px 10px;font-size:12.5px;line-height:1.5}
+  .meas b{color:var(--accent2)}
+  .levels{display:flex;gap:5px;margin:4px 0 8px}
+  .lvl{flex:1;text-align:center;font-size:11px;padding:5px 0;border:1px solid var(--line);border-radius:8px;cursor:pointer;color:var(--dim);transition:.15s}
+  .lvl.on{background:var(--accent2);color:#04122e;border-color:var(--accent2);font-weight:700}
+
+  /* 2D echo monitor */
+  #monitor{position:absolute;bottom:120px;right:14px;width:300px;z-index:25;
+    background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+  #monitor .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;cursor:move;user-select:none}
+  #monitor .mhead #mTitle{font-size:11px;color:var(--accent);letter-spacing:1px}
+  #monitor .mtools{display:flex;align-items:center;gap:6px}
+  #monitor .mtools button{background:#16223c;border:1px solid var(--line);color:var(--dim);border-radius:6px;width:24px;height:22px;font-size:12px;cursor:pointer;transition:.15s;line-height:1}
+  #monitor .mtools button:hover{border-color:var(--accent);color:var(--accent)}
+  #monitor .mhead .live{display:flex;align-items:center;gap:4px;color:var(--bad);font-size:10px;margin-inline-start:2px}
+  #monitor .mhead .live i{width:7px;height:7px;border-radius:50%;background:var(--bad);display:inline-block;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  #echoCanvas{width:100%;border-radius:8px;background:#000;display:block;border:1px solid #1a2238}
+  #monitor .cap{font-size:10.5px;color:var(--dim);text-align:center;margin-top:5px;direction:ltr}
+  #monitor .syncbadge{font-size:10px;color:var(--warn);text-align:center;margin-top:3px}
+  .pqcanvas{width:100%;border-radius:8px;background:#000;display:block;border:1px solid #1a2238;margin:8px 0}
+  /* model/real toggle + real-media layers */
+  .usToggle{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-inline-end:2px}
+  .usToggle button{background:#16223c;border:none;color:var(--dim);font-size:10.5px;padding:3px 8px;cursor:pointer;width:auto;height:22px;border-radius:0}
+  .usToggle button.on{background:var(--accent);color:#04221e;font-weight:700}
+  #echoStage{position:relative;width:100%;line-height:0}
+  #echoStage #echoCanvas{width:100%;display:block}
+  #realVid,#realImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;border-radius:8px;border:1px solid #1a2238;display:none}
+  #realPh{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+    background:#05080c;border-radius:8px;border:1px dashed var(--line);color:var(--dim);font-size:11.5px;line-height:1.5;text-align:center;padding:16px}
+  #realPh code{background:#15203a;color:var(--accent);padding:1px 6px;border-radius:5px;font-size:11px}
+  #realPh b{color:var(--txt)}
+
+  /* orientation badge */
+  #orient{position:absolute;top:66px;left:14px;width:212px;background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:11px 12px;z-index:12;backdrop-filter:blur(10px)}
+  #orient h4{font-size:12px;color:var(--accent2);margin-bottom:6px}
+  #orient .o{font-size:11.5px;color:var(--txt);line-height:1.5;margin:2px 0}
+  #orient .o b{color:var(--warn)}
+
+  /* demonstration narration banner */
+  #narrate{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:18;width:min(680px,92vw);
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:13px 16px;backdrop-filter:blur(14px);
+    box-shadow:0 16px 44px rgba(0,0,0,.5)}
+  #narrate .ntop{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  #narrate .nstep{font-size:12px;color:var(--accent);font-weight:700}
+  #narrate .nctrl{display:flex;gap:6px;align-items:center}
+  #narrate .nctrl button{background:#15203a;border:1px solid var(--line);color:var(--txt);border-radius:8px;
+    width:34px;height:30px;font-size:14px;cursor:pointer;transition:.15s}
+  #narrate .nctrl button:hover{border-color:var(--accent);color:var(--accent)}
+  #narrate .nctrl .pp{background:var(--accent);color:#04221e;border-color:var(--accent);font-weight:700;width:auto;padding:0 12px}
+  #narrate .ntxt{font-size:14px;line-height:1.5;color:var(--txt);min-height:42px}
+  #narrate .ntxt b{color:var(--warn)}
+  #narrate .nbar{height:4px;background:#13203a;border-radius:3px;margin-top:9px;overflow:hidden}
+  #narrate .nbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .25s linear}
+  #narrate .ndots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+  #narrate .ndot{width:8px;height:8px;border-radius:50%;background:var(--line);cursor:pointer;transition:.18s}
+  #narrate .ndot.on{background:var(--accent);transform:scale(1.4)}
+
+  /* intro / mode-select overlay */
+  #intro{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 35%,rgba(20,30,54,.7),rgba(5,8,16,.96));backdrop-filter:blur(7px);padding:20px}
+  #intro .box{width:min(620px,94vw);background:var(--panel-solid);border:1px solid var(--line);border-radius:22px;padding:30px 30px 26px;text-align:center;box-shadow:0 26px 70px rgba(0,0,0,.6)}
+  #intro h1{font-size:25px;margin-bottom:6px}
+  #intro .sub{color:var(--dim);font-size:14px;margin-bottom:6px;direction:ltr}
+  #intro p{color:var(--txt);font-size:14px;line-height:1.6;margin:14px 0 20px}
+  #intro .modes{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  #intro .mode{flex:1;min-width:220px;border:1px solid var(--line);border-radius:16px;padding:18px;cursor:pointer;transition:.16s;background:#0c1326;text-align:right}
+  #intro .mode:hover{transform:translateY(-3px)}
+  #intro .mode.primary{border-color:var(--accent);background:linear-gradient(180deg,rgba(52,209,191,.12),#0c1326)}
+  #intro .mode.primary:hover{box-shadow:0 14px 36px rgba(52,209,191,.25)}
+  #intro .mode .mt{font-size:17px;font-weight:700;margin-bottom:4px}
+  #intro .mode .md{font-size:12.5px;color:var(--dim);line-height:1.5}
+  #intro .mode .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;margin-bottom:8px}
+  #intro .mode.primary .tag{background:var(--accent);color:#04221e}
+  #intro .mode.secondary .tag{background:#22304e;color:var(--dim)}
+
+  /* quiz */
+  #quiz{position:absolute;inset:0;background:rgba(5,8,16,.93);z-index:55;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+  #quiz .card{width:min(640px,94vw);max-height:90vh;overflow-y:auto;background:var(--panel-solid);border:1px solid var(--line);border-radius:20px;padding:26px}
+  #quiz h2{font-size:22px;margin-bottom:4px}
+  #quiz .qsub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  #quiz .q{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0b1224}
+  #quiz .q .qt{font-size:14px;font-weight:600;margin-bottom:10px}
+  #quiz .opt{display:block;width:100%;text-align:right;background:#0e1730;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px 12px;margin:6px 0;cursor:pointer;font-size:13px;transition:.12s}
+  #quiz .opt:hover{border-color:var(--accent2)}
+  #quiz .opt.correct{background:rgba(67,209,122,.18);border-color:var(--good)}
+  #quiz .opt.wrong{background:rgba(255,107,107,.16);border-color:var(--bad)}
+  #quiz .feedback{font-size:12px;margin-top:8px;color:var(--dim);display:none}
+  #quiz .score{font-size:16px;text-align:center;margin-top:16px;padding:14px;border-radius:12px;background:rgba(52,209,191,.1);border:1px solid rgba(52,209,191,.3)}
+  #quiz .close{margin-top:16px;width:100%;background:var(--accent);color:#04221e;border:none;border-radius:11px;padding:12px;font-size:15px;font-weight:700;cursor:pointer}
+
+  #load{position:absolute;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+  #load .ring{width:46px;height:46px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #load p{color:var(--dim);font-size:13px}
+
+  @media(max-width:900px){
+    #explain{width:300px;font-size:12px} #monitor{width:235px} #orient{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <div id="topbar">
+    <div class="title"><h1>הדמיית אקו-לב בכלב <small>Canine Echocardiography · 3D Trainer</small></h1></div>
+    <div class="toolbtns">
+      <a class="tbtn" href="index.html" title="חזרה לתפריט הראשי" style="text-decoration:none;display:inline-flex;align-items:center">⌂ תפריט</a>
+      <button class="tbtn prim" id="btnDemo">▶ הדגמה</button>
+      <button class="tbtn" id="btnPractice">🎓 תרגול</button>
+      <button class="tbtn on" id="btnBeam">📡 קרן</button>
+      <button class="tbtn" id="btnBeat">❤️ פעימה</button>
+      <button class="tbtn" id="btnReset">↻ מבט</button>
+    </div>
+  </div>
+
+  <div id="orient">
+    <h4>מנח המתמר · Probe</h4>
+    <div class="o" id="oSide"></div>
+    <div class="o" id="oMark"></div>
+    <div class="o" id="oPlane"></div>
+  </div>
+
+  <div id="explain"></div>
+
+  <div id="monitor">
+    <div class="mhead" id="mHead">
+      <span id="mTitle">2D ECHO</span>
+      <span class="mtools">
+        <span class="usToggle">
+          <button id="modeModel" class="on">דגם</button>
+          <button id="modeReal">אקו אמיתי</button>
+        </span>
+        <button id="mSize" title="הגדל / הקטן">⤢</button>
+        <button id="mReset" title="אפס מיקום וגודל">↺</button>
+        <span class="live"><i></i>LIVE</span>
+      </span>
+    </div>
+    <div id="echoStage">
+      <canvas id="echoCanvas" width="420" height="330"></canvas>
+      <video id="realVid" muted loop playsinline></video>
+      <img id="realImg" alt="real echocardiogram"/>
+      <div id="realPh"></div>
+    </div>
+    <div class="cap" id="echoCap"></div>
+    <div class="syncbadge" id="syncBadge">⟵ הקרן הצהובה בתלת-מימד = החתך שמופיע כאן · גרור לי הזיז · ⤢ להגדלה</div>
+  </div>
+
+  <div id="narrate">
+    <div class="ntop">
+      <span class="nstep" id="nStep">שלב 1 / 7</span>
+      <div class="nctrl">
+        <button id="nPrev" title="הקודם">‹</button>
+        <button class="pp" id="nPlay">⏸ השהה</button>
+        <button id="nNext" title="הבא">›</button>
+      </div>
+    </div>
+    <div class="ntxt" id="nTxt"></div>
+    <div class="nbar"><i id="nBar"></i></div>
+    <div class="ndots" id="nDots"></div>
+  </div>
+
+  <div id="intro">
+    <div class="box">
+      <h1>🫀 בדיקת אקו-לב בכלב</h1>
+      <div class="sub">Canine Echocardiography · Interactive 3D Trainer</div>
+      <p>הכלב שוכב בשכיבה צדית על <b>שולחן קרדיולוגי עם חלון</b>, והמתמר ניגש מלמטה דרך החלון — בדיוק כמו במציאות.<br>הקרן חותכת את הלב, והמסך מציג בו-זמנית את החתך הקרדיולוגי המתאים.</p>
+      <div class="modes">
+        <div class="mode primary" id="startDemo">
+          <span class="tag">מומלץ · למידה</span>
+          <div class="mt">▶ הדגמה מודרכת</div>
+          <div class="md">צפה בבדיקה המלאה צעד-אחר-צעד: היכן מניחים את המתמר, באיזו זווית, מה רואים בכל מנח ואילו מחלות מתגלות.</div>
+        </div>
+        <div class="mode secondary" id="startPractice">
+          <span class="tag">אופציה · תרגול</span>
+          <div class="mt">🎓 מצב תרגול</div>
+          <div class="md">אחרי שלמדת — בחן את עצמך בשאלות על המנחים והמדידות, וודא שאתה יכול לבצע את הבדיקה בעצמך.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz"><div class="card" id="quizCard"></div></div>
+  <div id="load"><div class="ring"></div><p>טוען מודל תלת-מימדי…</p></div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ===================== SCENE ===================== */
+const canvas=document.getElementById('scene');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x070b16,0.012);
+const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,1000);
+const HOME_CAM=new THREE.Vector3(7.5,6.0,10.5), HOME_TGT=new THREE.Vector3(1.0,1.6,0.2);
+camera.position.copy(HOME_CAM);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=.08;
+controls.minDistance=5; controls.maxDistance=28; controls.target.copy(HOME_TGT);
+controls.maxPolarAngle=Math.PI*0.92;
+
+scene.add(new THREE.HemisphereLight(0x9fc6ff,0x0a0f1c,0.75));
+const key=new THREE.DirectionalLight(0xffffff,1.5); key.position.set(6,11,8); scene.add(key);
+const rim=new THREE.DirectionalLight(0x6aa6ff,0.9); rim.position.set(-8,4,-7); scene.add(rim);
+const under=new THREE.PointLight(0x34d1bf,0.6,26); under.position.set(1.4,-2,3); scene.add(under);
+
+/* floor */
+const floor=new THREE.Mesh(new THREE.CircleGeometry(40,64),
+  new THREE.MeshStandardMaterial({color:0x080d18,roughness:1}));
+floor.rotation.x=-Math.PI/2; floor.position.y=-6.2; scene.add(floor);
+const grid=new THREE.GridHelper(60,60,0x16223c,0x0d1320); grid.position.y=-6.18; scene.add(grid);
+
+/* ===================== CARDIOLOGY TABLE with WINDOW ===================== */
+const tableY=0;
+const tableGroup=new THREE.Group(); scene.add(tableGroup);
+// tabletop with a rectangular cutout (the echo window)
+const TBL={x0:-7,x1:8,z0:-4,z1:4, hx0:-0.3,hx1:3.4,hz0:-1.7,hz1:2.0};
+const topShape=new THREE.Shape();
+topShape.moveTo(TBL.x0,TBL.z0); topShape.lineTo(TBL.x1,TBL.z0);
+topShape.lineTo(TBL.x1,TBL.z1); topShape.lineTo(TBL.x0,TBL.z1); topShape.lineTo(TBL.x0,TBL.z0);
+const hole=new THREE.Path();
+hole.moveTo(TBL.hx0,TBL.hz0); hole.lineTo(TBL.hx1,TBL.hz0);
+hole.lineTo(TBL.hx1,TBL.hz1); hole.lineTo(TBL.hx0,TBL.hz1); hole.lineTo(TBL.hx0,TBL.hz0);
+topShape.holes.push(hole);
+const topGeo=new THREE.ExtrudeGeometry(topShape,{depth:0.4,bevelEnabled:true,bevelThickness:0.06,bevelSize:0.06,bevelSegments:2});
+topGeo.rotateX(-Math.PI/2);
+const tableMat=new THREE.MeshStandardMaterial({color:0x26344d,roughness:.85,metalness:.1});
+const tabletop=new THREE.Mesh(topGeo,tableMat); tabletop.position.y=tableY-0.4; tableGroup.add(tabletop);
+// soft pad on top (around the window) — lighter blue mat
+const padShape=new THREE.Shape();
+padShape.moveTo(TBL.x0+0.3,TBL.z0+0.3); padShape.lineTo(TBL.x1-0.3,TBL.z0+0.3);
+padShape.lineTo(TBL.x1-0.3,TBL.z1-0.3); padShape.lineTo(TBL.x0+0.3,TBL.z1-0.3); padShape.lineTo(TBL.x0+0.3,TBL.z0+0.3);
+const padHole=new THREE.Path();
+padHole.moveTo(TBL.hx0-0.15,TBL.hz0-0.15); padHole.lineTo(TBL.hx1+0.15,TBL.hz0-0.15);
+padHole.lineTo(TBL.hx1+0.15,TBL.hz1+0.15); padHole.lineTo(TBL.hx0-0.15,TBL.hz1+0.15); padHole.lineTo(TBL.hx0-0.15,TBL.hz0-0.15);
+padShape.holes.push(padHole);
+const padGeo=new THREE.ShapeGeometry(padShape); padGeo.rotateX(-Math.PI/2);
+const pad=new THREE.Mesh(padGeo,new THREE.MeshStandardMaterial({color:0x33567a,roughness:.95}));
+pad.position.y=tableY+0.005; tableGroup.add(pad);
+// glowing rim around the window
+const rimGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(TBL.hx1-TBL.hx0,0.02,TBL.hz1-TBL.hz0));
+const winRim=new THREE.LineSegments(rimGeo,new THREE.LineBasicMaterial({color:0x34d1bf,transparent:true,opacity:.7}));
+winRim.position.set((TBL.hx0+TBL.hx1)/2,tableY+0.02,(TBL.hz0+TBL.hz1)/2); tableGroup.add(winRim);
+// legs
+const legMat=new THREE.MeshStandardMaterial({color:0x1a2438,roughness:.7,metalness:.2});
+[[TBL.x0+1,TBL.z0+1],[TBL.x1-1,TBL.z0+1],[TBL.x0+1,TBL.z1-1],[TBL.x1-1,TBL.z1-1]].forEach(p=>{
+  const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,6,12),legMat);
+  leg.position.set(p[0],-3.2,p[1]); tableGroup.add(leg);
+});
+// "WINDOW" label sprite
+function makeLabel(txt,color='#9fb0cc',scale=2.2){
+  const c=document.createElement('canvas'); c.width=300;c.height=64;
+  const x=c.getContext('2d'); x.font='bold 30px Segoe UI'; x.fillStyle=color;
+  x.textAlign='center'; x.textBaseline='middle'; x.fillText(txt,150,32);
+  const t=new THREE.CanvasTexture(c);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));
+  s.scale.set(scale,scale*0.213,1); return s;
+}
+
+/* ===================== PATIENT (dog) in LATERAL RECUMBENCY ===================== */
+// local frame: +X cranial, +Y dorsal, +Z left.  Patient rotated to lie on table.
+const patient=new THREE.Group(); scene.add(patient);
+const REST_Y=2.55;
+patient.position.set(0.0,REST_Y,0.3);
+patient.rotation.x=-Math.PI/2;   // right lateral: right flank down, belly toward +Z
+
+const glassMat=new THREE.MeshPhysicalMaterial({
+  color:0x9cc0ef,transparent:true,opacity:.07,roughness:.2,metalness:0,
+  transmission:.95,thickness:.8,ior:1.2,side:THREE.DoubleSide,depthWrite:false,clearcoat:.3,clearcoatRoughness:.5});
+const outlineMat=new THREE.MeshBasicMaterial({color:0x6fa0e0,wireframe:true,transparent:true,opacity:.05,depthWrite:false});
+const dog=new THREE.Group(); patient.add(dog);
+function part(geo,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1){
+  const m=new THREE.Mesh(geo,glassMat); m.position.set(x,y,z); m.rotation.set(rx,ry,rz); m.scale.set(sx,sy,sz); dog.add(m);
+  const w=new THREE.Mesh(geo,outlineMat); w.position.set(x,y,z); w.rotation.set(rx,ry,rz); w.scale.set(sx,sy,sz); dog.add(w);
+  return m;
+}
+// torso: a single deep-chest body (low-poly for a clean holographic silhouette)
+part(new THREE.CapsuleGeometry(2.15,3.6,10,18), 0.2,0,0, 0,0,Math.PI/2, 1.0,1.18,0.96); // main body, deep chest
+part(new THREE.SphereGeometry(2.35,16,13), 2.5,0.1,0, 0,0,0, 1.0,1.16,0.98);  // chest swell (cranial)
+part(new THREE.SphereGeometry(1.78,16,12), -1.7,-0.12,0, 0,0,0, 1.06,0.92,0.92); // loin tuck
+part(new THREE.SphereGeometry(2.05,16,13), -3.1,0.05,0, 0,0,0, 1.04,1.04,0.98);  // hip/rump
+// neck rising to head
+part(new THREE.CylinderGeometry(1.05,1.75,2.5,16), 4.05,1.25,0, 0,0,-Math.PI/2.6);
+// head: skull + long muzzle + nose
+part(new THREE.SphereGeometry(1.12,16,13), 5.55,2.25,0, 0,0,0, 1.05,1.0,0.9);
+part(new THREE.CapsuleGeometry(0.5,1.15,8,14), 7.0,1.75,0, 0,0,Math.PI/2.1, 1,1,0.85); // muzzle
+part(new THREE.SphereGeometry(0.2,12,10), 7.85,1.7,0);                                  // nose
+// ears (upright triangular)
+part(new THREE.ConeGeometry(0.42,1.0,4), 5.05,3.15,0.55, 0.15,Math.PI/4,0.15);
+part(new THREE.ConeGeometry(0.42,1.0,4), 5.05,3.15,-0.55, -0.15,Math.PI/4,0.15);
+// legs — thinner two-segment with paw, lying extended
+function leg(hx,hy,hz, len1,len2,r,spread,bend){
+  const g=new THREE.Group(); g.position.set(hx,hy,hz); dog.add(g);
+  const mk=(rr,ll,mat)=>{const m=new THREE.Mesh(new THREE.CapsuleGeometry(rr,ll,6,10),mat); return m;};
+  const up=mk(r,len1,glassMat); up.position.y=-len1/2; g.add(up);
+  const upW=mk(r,len1,outlineMat); upW.position.y=-len1/2; g.add(upW);
+  g.rotation.z=spread;
+  const j=new THREE.Group(); j.position.y=-len1; j.rotation.x=bend; g.add(j);
+  const lo=mk(r*0.8,len2,glassMat); lo.position.y=-len2/2; j.add(lo);
+  const loW=mk(r*0.8,len2,outlineMat); loW.position.y=-len2/2; j.add(loW);
+  const paw=new THREE.Mesh(new THREE.SphereGeometry(r,10,8),glassMat); paw.position.y=-len2; paw.scale.set(1.3,0.65,1.1); j.add(paw);
+  return g;
+}
+leg(2.7,-1.5,0.9, 1.8,1.8,0.34, 0.18, 0.55);     // foreleg near
+leg(2.7,-1.5,-0.9, 1.8,1.8,0.34, 0.18, 0.55);     // foreleg far
+leg(-2.8,-1.4,1.0, 1.9,1.8,0.38, -0.12, 0.65);    // hindleg near
+leg(-2.8,-1.4,-1.0, 1.9,1.8,0.38, -0.12, 0.65);   // hindleg far
+// tail (rising, curved)
+part(new THREE.CapsuleGeometry(0.3,2.4,8,12), -4.65,0.7,0, 0,0,-Math.PI/2.9, 1,1,1);
+
+/* ===================== REALISTIC HEART (child of patient) ===================== */
+const heart=new THREE.Group();
+heart.position.set(1.5,-0.2,0.2);       // local: cranio-ventral chest, sits over the window
+heart.rotation.set(0.15,0,-0.4);
+heart.scale.setScalar(0.78);            // anatomically sized — occupies part of the chest
+patient.add(heart);
+function pnoise(x,y,z){return (Math.sin(x*3.1+y*1.7)+Math.sin(y*2.3+z*2.9)+Math.sin(z*3.7+x*1.3))/3;}
+// translucent myocardium so the beam plane is visible passing THROUGH the heart
+const myoMat=new THREE.MeshPhysicalMaterial({color:0x9e2b22,roughness:.34,metalness:0,clearcoat:.7,clearcoatRoughness:.45,
+  sheen:.55,sheenColor:new THREE.Color(0x6e120e),transmission:.18,thickness:1.4,ior:1.36,transparent:true,opacity:.92,
+  emissive:0x3a0c08,emissiveIntensity:.0});
+const vprofile=[[0.02,-2.05],[0.34,-1.86],[0.62,-1.55],[0.86,-1.15],[1.04,-0.66],
+  [1.14,-0.14],[1.16,0.30],[1.08,0.66],[0.92,0.95],[0.66,1.12],[0.30,1.20]].map(p=>new THREE.Vector2(p[0],p[1]));
+const ventGeo=new THREE.LatheGeometry(vprofile,72);
+{ const pos=ventGeo.attributes.position,v=new THREE.Vector3();
+  for(let i=0;i<pos.count;i++){ v.fromBufferAttribute(pos,i);
+    v.x*=1.16; v.z*=0.9; const ang=Math.atan2(v.z,v.x);
+    const depth=THREE.MathUtils.clamp((1.0-(v.y+2.0)/3.2),0,1);
+    const groove=Math.exp(-Math.pow(ang-(-Math.PI*0.5),2)/0.10)*0.16*depth;
+    const r=Math.hypot(v.x,v.z); if(r>1e-4){v.x-=(v.x/r)*groove; v.z-=(v.z/r)*groove;}
+    const n=pnoise(v.x*1.6,v.y*1.6,v.z*1.6)*0.05; if(r>1e-4){v.x+=(v.x/r)*n; v.z+=(v.z/r)*n;}
+    pos.setXYZ(i,v.x,v.y,v.z);} ventGeo.computeVertexNormals(); }
+const ventricles=new THREE.Mesh(ventGeo,myoMat); heart.add(ventricles);
+const atriaMat=()=>new THREE.MeshPhysicalMaterial({color:0x7d2230,roughness:.46,clearcoat:.45,sheen:.4,
+  transmission:.16,thickness:1,ior:1.35,transparent:true,opacity:.92,emissive:0x2e0a14,emissiveIntensity:0});
+const laMat=atriaMat(), raMat=atriaMat();
+const la=new THREE.Mesh(new THREE.SphereGeometry(0.66,40,28),laMat); la.position.set(-0.18,1.12,0.40); la.scale.set(1.12,0.85,1.0); heart.add(la);
+const laur=new THREE.Mesh(new THREE.SphereGeometry(0.27,26,18),laMat); laur.position.set(0.62,0.92,0.50); laur.scale.set(1.4,0.7,0.8); heart.add(laur);
+const ra=new THREE.Mesh(new THREE.SphereGeometry(0.62,40,28),raMat); ra.position.set(0.22,1.08,-0.52); ra.scale.set(1,0.85,1); heart.add(ra);
+const raur=new THREE.Mesh(new THREE.SphereGeometry(0.24,24,16),raMat); raur.position.set(0.70,0.85,-0.45); raur.scale.set(1.3,0.7,0.8); heart.add(raur);
+const aoMat=new THREE.MeshPhysicalMaterial({color:0xc23b30,roughness:.4,clearcoat:.5,emissive:0x3a0d0a,emissiveIntensity:0});
+const paMat=new THREE.MeshPhysicalMaterial({color:0x5577c8,roughness:.4,clearcoat:.5,emissive:0x0d1a3a,emissiveIntensity:0});
+const aoCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0.55,-0.05),new THREE.Vector3(0.05,1.5,-0.1),
+  new THREE.Vector3(0.18,2.3,-0.2),new THREE.Vector3(-0.25,2.75,-0.35),new THREE.Vector3(-0.95,2.5,-0.5),new THREE.Vector3(-1.45,1.85,-0.55)]);
+const aorta=new THREE.Mesh(new THREE.TubeGeometry(aoCurve,64,0.30,20,false),aoMat); heart.add(aorta);
+const paCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0.34,0.55,-0.5),new THREE.Vector3(0.42,1.45,-0.42),
+  new THREE.Vector3(0.2,2.15,-0.08),new THREE.Vector3(-0.18,2.35,0.28)]);
+const pulm=new THREE.Mesh(new THREE.TubeGeometry(paCurve,56,0.27,18,false),paMat); heart.add(pulm);
+const svcCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0.45,1.05,-0.7),new THREE.Vector3(0.72,1.8,-0.7),new THREE.Vector3(0.98,2.45,-0.62)]);
+heart.add(new THREE.Mesh(new THREE.TubeGeometry(svcCurve,40,0.21,16,false),new THREE.MeshPhysicalMaterial({color:0x4a6fb0,roughness:.4,clearcoat:.5})));
+const coroMat=new THREE.MeshStandardMaterial({color:0x7a1812,roughness:.5});
+const ladCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0.95,0.62),new THREE.Vector3(-0.05,0.3,0.7),
+  new THREE.Vector3(-0.02,-0.45,0.6),new THREE.Vector3(0,-1.15,0.42),new THREE.Vector3(0.03,-1.7,0.18)]);
+heart.add(new THREE.Mesh(new THREE.TubeGeometry(ladCurve,56,0.05,10,false),coroMat));
+const cxCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0.55,0.55,0.45),new THREE.Vector3(0.2,0.62,0.85),
+  new THREE.Vector3(-0.5,0.6,0.55),new THREE.Vector3(-0.75,0.55,-0.1),new THREE.Vector3(-0.45,0.55,-0.7)]);
+heart.add(new THREE.Mesh(new THREE.TubeGeometry(cxCurve,56,0.045,10,false),coroMat));
+const fat=new THREE.Mesh(new THREE.TorusGeometry(1.02,0.12,12,40,Math.PI*0.8),
+  new THREE.MeshStandardMaterial({color:0xddc879,roughness:.8,transparent:true,opacity:.5}));
+fat.position.set(0,0.55,-0.15); fat.rotation.set(Math.PI/2,0,Math.PI*0.55); fat.scale.set(1.1,0.9,1); heart.add(fat);
+
+// highlightable parts for synchronized teaching
+const heartParts={LV:{m:ventricles,c:0x6a1410},LA:{m:la,c:0x5a1428},RA:{m:ra,c:0x5a1428},
+  AO:{m:aorta,c:0x7a1a12},PA:{m:pulm,c:0x18306a},RV:{m:ventricles,c:0x6a1410}};
+function setHighlight(keys){
+  for(const k in heartParts){heartParts[k].m.material.emissiveIntensity=0;}
+  (keys||[]).forEach(k=>{const p=heartParts[k]; if(p){p.m.material.emissive.setHex(p.c); p.m.material.emissiveIntensity=0.55;}});
+}
+const beaters=[{m:ventricles,s:ventricles.scale.clone(),amp:.035},{m:la,s:la.scale.clone(),amp:.05},{m:ra,s:ra.scale.clone(),amp:.05}];
+
+/* ===================== PROBE + GLOVED HAND (from BELOW through the window) ===================== */
+const probe=new THREE.Group(); scene.add(probe);
+const pInner=new THREE.Group(); probe.add(pInner);   // holds model; pInner is flipped to point up
+pInner.rotation.x=Math.PI;                            // face (local -Y) now points +Y (up)
+const pBody=new THREE.Mesh(new THREE.CylinderGeometry(.28,.36,1.3,20),new THREE.MeshStandardMaterial({color:0x202736,roughness:.5,metalness:.3})); pInner.add(pBody);
+const pFace=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.12,20),new THREE.MeshStandardMaterial({color:0x34d1bf,emissive:0x0c6b60,emissiveIntensity:.6})); pFace.position.y=-.7; pInner.add(pFace);
+const pCable=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.2,8),new THREE.MeshStandardMaterial({color:0x111722})); pCable.position.y=1.0; pInner.add(pCable);
+const pMark=new THREE.Mesh(new THREE.SphereGeometry(.09,12,12),new THREE.MeshStandardMaterial({color:0xffd24a,emissive:0xaa7a00,emissiveIntensity:.7})); pMark.position.set(.26,-.4,0); pInner.add(pMark);
+// gloved hand gripping from below
+const gloveMat=new THREE.MeshStandardMaterial({color:0x57b4c4,roughness:.55,metalness:.05});
+const skinMat=new THREE.MeshStandardMaterial({color:0x4aa7b8,roughness:.5});
+const palm=new THREE.Mesh(new THREE.SphereGeometry(0.5,24,18),gloveMat); palm.scale.set(0.95,0.55,1.0); palm.position.set(0,0.5,0.42); pInner.add(palm);
+function finger(l1,l2,r,bend){const g=new THREE.Group();
+  const s1=new THREE.Mesh(new THREE.CapsuleGeometry(r,l1,8,12),gloveMat); s1.position.y=-l1/2; g.add(s1);
+  const j=new THREE.Group(); j.position.y=-l1; j.rotation.x=bend; g.add(j);
+  const s2=new THREE.Mesh(new THREE.CapsuleGeometry(r*0.88,l2,8,12),gloveMat); s2.position.y=-l2/2; j.add(s2); return g;}
+[-0.33,-0.11,0.11,0.33].forEach((fx,i)=>{const f=finger(0.34,0.3,0.105,0.95+(i===0||i===3?0.15:0)); f.position.set(fx,0.62,0.12); f.rotation.x=0.55; pInner.add(f);});
+const thumb=finger(0.32,0.26,0.13,0.8); thumb.position.set(0.42,0.4,-0.05); thumb.rotation.set(0.4,0,-0.9); pInner.add(thumb);
+const wrist=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.46,0.5,18),gloveMat); wrist.position.set(0,0.95,0.7); wrist.rotation.x=0.6; pInner.add(wrist);
+const cuff=new THREE.Mesh(new THREE.TorusGeometry(0.46,0.1,12,28),new THREE.MeshStandardMaterial({color:0x2f6f7c,roughness:.6})); cuff.position.set(0,1.15,0.85); cuff.rotation.x=Math.PI/2-0.6; pInner.add(cuff);
+const forearm=new THREE.Mesh(new THREE.CylinderGeometry(0.46,0.6,2.6,18),skinMat); forearm.position.set(0,2.1,1.45); forearm.rotation.x=0.65; pInner.add(forearm);
+
+// BEAM — sector plane emitted from face, upward into the chest
+const beamGroup=new THREE.Group(); pInner.add(beamGroup);
+const SECTOR_DEG=64, SECTOR_LEN=4.6;
+function buildSector(){const shape=new THREE.Shape(); const half=THREE.MathUtils.degToRad(SECTOR_DEG/2);
+  shape.moveTo(0,0); const seg=28;
+  for(let i=0;i<=seg;i++){const a=-half+(2*half)*(i/seg); shape.lineTo(Math.sin(a)*SECTOR_LEN,-Math.cos(a)*SECTOR_LEN);}
+  shape.lineTo(0,0); return new THREE.ShapeGeometry(shape);}
+const beamMat=new THREE.MeshBasicMaterial({color:0xffd24a,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
+const beamMesh=new THREE.Mesh(buildSector(),beamMat); beamMesh.position.y=-.72; beamGroup.add(beamMesh);
+const beamEdge=new THREE.LineSegments(new THREE.EdgesGeometry(buildSector()),new THREE.LineBasicMaterial({color:0xffe27a,transparent:true,opacity:.55})); beamEdge.position.y=-.72; beamGroup.add(beamEdge);
+const scanLine=new THREE.Mesh(new THREE.PlaneGeometry(.04,SECTOR_LEN),new THREE.MeshBasicMaterial({color:0xfff4c0,transparent:true,opacity:.55,blending:THREE.AdditiveBlending})); scanLine.position.set(0,-.72-SECTOR_LEN/2,.001); beamGroup.add(scanLine);
+// the imaging plane "footprint" disk where it meets the chest (gel contact)
+const contact=new THREE.Mesh(new THREE.CircleGeometry(0.34,20),new THREE.MeshBasicMaterial({color:0x34d1bf,transparent:true,opacity:.5,side:THREE.DoubleSide})); contact.position.y=-.7; contact.rotation.x=-Math.PI/2; pInner.add(contact);
+
+/* ===================== VIEWS ===================== */
+const D2R=THREE.MathUtils.degToRad;
+const VIEWS=[
+  { id:'rpla4', lateral:'right', name:'Right Parasternal Long-Axis · 4 Chambers', he:'מנח ימני אורכי · 4 חדרים',
+    probe:{x:1.5,z:0.5, tilt:[ -0.18,0,0.05 ]}, highlight:['LV','LA','RV'], echo:'longaxis4',
+    narr:'מתחילים בצד ימין. הכלב בשכיבה צדית <b>ימנית</b>, המתמר עולה מלמטה דרך החלון אל דופן החזה. סובבים את הקרן למישור אורכי — ומופיעים <b>ארבעת החדרים</b>: חדר שמאל, חדר ימין, שתי העליות והמסתם המיטרלי.',
+    site:'דופן חזה ימני, מרחב בין-צלעי 4-5, שכיבה צדית ימנית — דימות מהצד התחתון דרך חלון השולחן',
+    siteEn:'Right chest wall, 4th–5th ICS, right lateral — imaged from the dependent side through the table window',
+    mark:'סמן המתמר → קרניאלי (מרפק)', plane:'מישור אורכי דרך LV · LA · מסתם מיטרלי',
+    focus_beg:'זיהוי ארבעת חדרי הלב: שני חדרים למטה, שתי עליות למעלה, ומחיצה ביניהם.',
+    focus_gen:'הערכה כללית של גודל חדרים, עובי דופן ותנועתיות המסתם המיטרלי — מנח ה"מסך" הבסיסי.',
+    focus_adv:'יחס LA:Ao בסיסי, עובי IVS ו-LVFW, תנועת עלי המסתם המיטרלי, נפח LA.',
+    see_he:'חדר שמאל גדול עם דופן עבה, חדר ימין קטן יותר, עליה שמאל מאחור, מסתם מיטרלי נפתח/נסגר, מחיצה בין-חדרית.',
+    see_en:'Large thick-walled LV, smaller RV, LA posteriorly, mitral valve, interventricular septum.',
+    diseases:['MMVD (ניוון מסתם מיטרלי)','DCM','היפרטרופיה','הגדלת LA'],
+    meas:'<b>LA:Ao</b> תקין &lt; 1.5 · <b>IVSd</b> ~0.6–1.1 ס״מ · בסיס לחישובי FS' },
+  { id:'rplaLVOT', lateral:'right', name:'Right Parasternal Long-Axis · LVOT', he:'מנח ימני אורכי · מוצא חדר שמאל',
+    probe:{x:1.75,z:0.5, tilt:[ -0.22,0,0.12 ]}, highlight:['LV','AO'], echo:'lvot',
+    narr:'מטים את המתמר מעט קדימה כדי "לפתוח" את <b>אבי-העורקים</b>. כעת רואים את מוצא חדר שמאל (LVOT) ואת מסתם אבי-העורקים בכניסה אליו, עם רצף בין המחיצה לדופן האאורטה.',
+    site:'אותו חלון, נטייה קלה קרניאלית לפתיחת אבי-העורקים', siteEn:'Same window, slight cranial tilt to open the aorta',
+    mark:'סמן המתמר → קרניאלי, נטייה גבית', plane:'מישור דרך LVOT · מסתם אבי-העורקים',
+    focus_beg:'איתור "הצינור" שיוצא מהלב — אבי-העורקים ומסתם אבי-העורקים.',
+    focus_gen:'הערכת מוצא חדר שמאל, מסתם אבי-העורקים, רצף מחיצה-אאורטה.',
+    focus_adv:'מדידת קוטר LVOT ל-SV, הערכת SAS, אי-ספיקה אאורטלית, טבעת סיבית.',
+    see_he:'מוצא חדר שמאל פתוח אל אבי-העורקים, מסתם תלת-עלי נפתח בסיסטולה, רצף IVS-אאורטה.',
+    see_en:'LVOT into aorta, trileaflet aortic valve in systole, septum-aorta continuity.',
+    diseases:['Subaortic stenosis (SAS)','אי-ספיקה אאורטלית','אנדוקרדיטיס'],
+    meas:'<b>LVOT diam</b> ל-SV · מהירות תקינה &lt; 1.7 m/s (CW)' },
+  { id:'rsaPap', lateral:'right', name:'Right Parasternal Short-Axis · Papillary', he:'מנח ימני קצר · שרירים פפילריים',
+    probe:{x:1.2,z:0.5, tilt:[ -0.15, Math.PI/2, 0.05 ]}, highlight:['LV'], echo:'shortPap',
+    narr:'מסובבים את המתמר ב-<b>90°</b> לחתך רוחבי. חדר שמאל נראה עגול כמו "פטריה" עם שני <b>שרירים פפילריים</b>. זהו המנח למדידת תפקוד סיסטולי — Fractional Shortening ב-M-mode.',
+    site:'אותו חלון, סיבוב 90° לחתך רוחבי', siteEn:'Same window, rotate 90° for a transverse cut',
+    mark:'סמן המתמר → גבית', plane:'חתך רוחבי בגובה השרירים הפפילריים',
+    focus_beg:'חתך עגול של חדר שמאל עם שני שרירים פפילריים בולטים.',
+    focus_gen:'מנח למדידת FS ב-M-mode דרך מרכז ה-LV.',
+    focus_adv:'M-mode: LVIDd/LVIDs/IVS/LVFW · FS%=(LVIDd−LVIDs)/LVIDd · eccentric מול concentric · סימטריית התכווצות.',
+    see_he:'חתך עגול סימטרי של LV עם שני שרירים פפילריים, RV כסהרון מלפנים, IVS.',
+    see_en:'Round symmetric LV with two papillary muscles, crescentic RV, IVS.',
+    diseases:['DCM (FS נמוך)','HCM (FS גבוה + דופן עבה)','התכווצות מוקדית'],
+    meas:'<b>FS%</b> תקין ~25–45% · M-mode דרך מרכז ה-LV' },
+  { id:'rsaBase', lateral:'right', name:'Right Parasternal Short-Axis · Heart Base (LA/Ao)', he:'מנח ימני קצר · בסיס הלב (LA/Ao)',
+    probe:{x:1.85,z:0.5, tilt:[ -0.28, Math.PI/2, 0.12 ]}, highlight:['LA','AO'], echo:'laao',
+    narr:'מטים קרניאלית-גבית אל <b>בסיס הלב</b>. אבי-העורקים נראה כמו סמל "מרצדס" (שלושה עלים) ולצדו העליה השמאלית. כאן מודדים את היחס <b>LA:Ao</b> — מדד מפתח להגדלת עליה שמאל.',
+    site:'הטיה קרניאלית-גבית אל בסיס הלב', siteEn:'Cranio-dorsal tilt toward the heart base',
+    mark:'סמן המתמר → גבית', plane:'חתך בגובה אבי-העורקים (תלתן) ועליה שמאל',
+    focus_beg:'אבי-העורקים כמו "מרצדס", ועליה שמאל צמודה אליו.',
+    focus_gen:'המנח הסטנדרטי למדידת LA:Ao — אינדיקטור להגדלת עליה שמאל.',
+    focus_adv:'LA:Ao בדיאסטולה מוקדמת, מסתם פולמונרי ו-RVOT, איתור PDA, פיצול עורק ריאתי.',
+    see_he:'אבי-העורקים מרכזי (תלתן), עליה שמאל לצדו, RVOT ועורק ריאתי עוטפים מלפנים.',
+    see_en:'Central aorta (Mercedes sign), LA adjacent, RVOT and PA wrapping anteriorly.',
+    diseases:['הגדלת LA (קריטי ב-MMVD/DCM)','PDA','Pulmonic stenosis','יתר לחץ ריאתי'],
+    meas:'<b>LA:Ao &gt; 1.6</b> = הגדלת עליה שמאל · מנבא אי-ספיקת לב' },
+  { id:'lapical4', lateral:'left', name:'Left Apical 4-Chamber · Mitral Doppler', he:'מנח אפיקלי שמאלי · דופלר מיטרלי',
+    probe:{x:1.2,z:0.1, tilt:[ 0.22,0,-0.08 ]}, highlight:['LV','LA'], echo:'doppler',
+    narr:'<b>הופכים את הכלב</b> לשכיבה צדית שמאלית. ניגשים מהאפקס מלמטה, והקרן מקבילה לזרימת הדם — אידאלי ל-<b>דופלר</b>. מודדים את גלי E ו-A של המילוי הדיאסטולי דרך המסתם המיטרלי.',
+    site:'דופן חזה שמאלי ליד האפקס, שכיבה צדית שמאלית', siteEn:'Left chest near apex, left lateral recumbency',
+    mark:'סמן המתמר → גבית, הקרן אל בסיס הלב', plane:'מישור אפיקלי דרך 4 החדרים — מקביל לזרימה',
+    focus_beg:'מבט על כל ארבעת החדרים יחד — מאפשר למדוד מהירות זרימה דרך המסתמים.',
+    focus_gen:'מנח מקביל לזרימה → אידאלי לדופלר. הערכת מילוי דיאסטולי (E/A) דרך המסתם המיטרלי.',
+    focus_adv:'PW מיטרלי: E/A, IVRT, diastolic dysfunction · TDI על annulus (E\') · MR jet ב-color.',
+    see_he:'כל 4 החדרים פרושים, אפקס בקודקוד; דופלר מראה גלי E (מילוי מהיר) ו-A (כיווץ עליה).',
+    see_en:'All 4 chambers splayed, apex at top; Doppler shows E & A waves.',
+    diseases:['Diastolic dysfunction','אי-ספיקה מיטרלית (MR)','לחצי מילוי'],
+    meas:'<b>E/A</b> תקין &gt; 1 · <b>E/E\'</b> ללחץ מילוי' },
+  { id:'lcranial', lateral:'left', name:'Left Cranial · Tricuspid / Pulmonic', he:'מנח שמאלי קרניאלי · טריקוספידלי/פולמונרי',
+    probe:{x:1.95,z:0.1, tilt:[ 0.2,0,-0.14 ]}, highlight:['RA','PA'], echo:'rightflow',
+    narr:'מנח שמאלי קרניאלי — הצד ה"ימני" של הלב: מסתם <b>טריקוספידלי</b> ומסתם <b>פולמונרי</b>. כאן אומדים יתר לחץ ריאתי דרך מהירות הזליגה הטריקוספידלית (TR), ומעריכים זרימה בעורק הריאתי.',
+    site:'דופן שמאלי קרניאלי, מרחב בין-צלעי 3-4', siteEn:'Left cranial chest, 3rd–4th ICS',
+    mark:'סמן המתמר → קרניאלי-גבית', plane:'מישור דרך RVOT, מסתם פולמונרי ועורק ריאתי',
+    focus_beg:'הצד ה"ימני" של הלב — מסתם טריקוספידלי ומסתם ריאתי.',
+    focus_gen:'זרימה במוצא חדר ימין ובעורק הריאתי, ואיתור זליגה טריקוספידלית.',
+    focus_adv:'CW על TR jet → PASP להערכת PH · PS gradient · איתור PDA (continuous flow ב-MPA).',
+    see_he:'מוצא חדר ימין, מסתם פולמונרי, עורק ריאתי ראשי; דופלר מראה זרימה סיסטולית קדימה.',
+    see_en:'RVOT, pulmonic valve, main PA; Doppler shows forward systolic flow.',
+    diseases:['יתר לחץ ריאתי (PH)','Pulmonic stenosis','PDA','אי-ספיקה טריקוספידלית'],
+    meas:'<b>TR Vmax</b> → PASP = 4·V² + RAP · <b>PS</b> gradient &gt; 50 mmHg משמעותי' },
+];
+
+/* ===================== UI: explanation reference ===================== */
+let cur=0, level='gen';
+const explainEl=document.getElementById('explain');
+function renderExplain(){
+  const v=VIEWS[cur];
+  const focus=level==='beg'?v.focus_beg:level==='adv'?v.focus_adv:v.focus_gen;
+  explainEl.innerHTML=`
+    <span class="pill">שלב ${cur+1} / ${VIEWS.length}</span>
+    <h2>🫀 ${v.he}</h2><div class="en">${v.name}</div>
+    <div class="levels">
+      <div class="lvl ${level==='beg'?'on':''}" data-lvl="beg">מתחיל</div>
+      <div class="lvl ${level==='gen'?'on':''}" data-lvl="gen">כללי</div>
+      <div class="lvl ${level==='adv'?'on':''}" data-lvl="adv">קרדיולוגיה</div>
+    </div>
+    <div class="sec"><h3>📍 מיקום המתמר · Probe placement</h3><p>${v.site}<span class="ennote">${v.siteEn}</span></p></div>
+    <div class="sec"><h3>🎯 על מה שמים דגש · Focus</h3><p>${focus}</p></div>
+    <div class="sec"><h3>👁️ מה רואים · What you see</h3><p>${v.see_he}<span class="ennote">${v.see_en}</span></p></div>
+    <div class="sec"><h3>📐 מדידות · Measurements</h3><div class="meas">${v.meas}</div></div>
+    <div class="sec"><h3>🩺 מחלות שהמנח מכסה · Pathologies</h3><div>${v.diseases.map(d=>`<span class="dz">${d}</span>`).join('')}</div></div>`;
+  explainEl.querySelectorAll('.lvl').forEach(el=>el.onclick=()=>{level=el.dataset.lvl; renderExplain();});
+  document.getElementById('oSide').innerHTML=`<b>חלון:</b> ${v.site.split(',')[0]}`;
+  document.getElementById('oMark').innerHTML=v.mark;
+  document.getElementById('oPlane').innerHTML=`<b>מישור:</b> ${v.plane}`;
+  document.getElementById('mTitle').textContent='2D ECHO · '+v.id.toUpperCase();
+  document.getElementById('echoCap').textContent=v.name;
+}
+
+/* ===================== NARRATION (demonstration) ===================== */
+const nTxt=document.getElementById('nTxt'), nStep=document.getElementById('nStep'),
+      nBar=document.getElementById('nBar'), nDots=document.getElementById('nDots'), nPlay=document.getElementById('nPlay');
+VIEWS.forEach((v,i)=>{const d=document.createElement('div'); d.className='ndot'; d.title=v.he; d.onclick=()=>goTo(i,true); nDots.appendChild(d);});
+function renderNarr(){
+  const v=VIEWS[cur];
+  nStep.textContent=`שלב ${cur+1} / ${VIEWS.length} · ${v.he}`;
+  nTxt.innerHTML=v.narr;
+  nDots.querySelectorAll('.ndot').forEach((d,i)=>d.classList.toggle('on',i===cur));
+}
+
+/* ===================== PROBE / PATIENT / CAMERA tweening ===================== */
+let tween=null;
+const probeBaseRot=new THREE.Euler();
+function worldProbeFor(v){
+  // heart world center depends on lateral pose
+  const side=v.lateral==='right'?1:-1;
+  // probe sits just below the window, under the chest wall, pointing up
+  const x=patient.position.x + (v.probe.x-1.45)*0.0 + v.probe.x*0.0 + v.probe.x; // x ~ along table
+  return {
+    pos:new THREE.Vector3(v.probe.x, 0.05, v.probe.z),
+    rot:new THREE.Euler(v.probe.tilt[0], v.probe.tilt[1], v.probe.tilt[2]),
+    patRotX: v.lateral==='right'? -Math.PI/2 : Math.PI/2,
+    camPos: new THREE.Vector3(6.8,5.4,side*10.2),
+    camTgt: new THREE.Vector3(v.probe.x,1.7,v.probe.z*0.5)
+  };
+}
+function goTo(i,fromUser){
+  cur=(i+VIEWS.length)%VIEWS.length;
+  const v=VIEWS[cur], w=worldProbeFor(v);
+  probeBaseRot.copy(w.rot);
+  const p0=probe.position.clone(), r0=probe.rotation.clone();
+  const patX0=patient.rotation.x, patX1=w.patRotX;
+  const c0=camera.position.clone(), t0v=controls.target.clone();
+  const t0=performance.now(), dur=1050;
+  setHighlight(v.highlight);
+  tween=(now)=>{ let k=Math.min(1,(now-t0)/dur); k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    probe.position.lerpVectors(p0,w.pos,k);
+    probe.rotation.x=r0.x+(w.rot.x-r0.x)*k; probe.rotation.y=r0.y+(w.rot.y-r0.y)*k; probe.rotation.z=r0.z+(w.rot.z-r0.z)*k;
+    patient.rotation.x=patX0+(patX1-patX0)*k;
+    camera.position.lerpVectors(c0,w.camPos,k); controls.target.lerpVectors(t0v,w.camTgt,k);
+    if(k>=1)tween=null;
+  };
+  renderExplain(); renderNarr(); restartStepTimer();
+  if(typeof usMode!=='undefined' && usMode==='real') loadReal(v);   // keep the real clip synced to the view
+}
+
+/* ===================== DEMONSTRATION auto-pacing ===================== */
+let playing=true, stepStart=performance.now(), STEP_MS=8500;
+function restartStepTimer(){ stepStart=performance.now(); }
+nPlay.onclick=()=>{ playing=!playing; nPlay.textContent=playing?'⏸ השהה':'▶ נגן'; restartStepTimer(); };
+document.getElementById('nPrev').onclick=()=>goTo(cur-1,true);
+document.getElementById('nNext').onclick=()=>goTo(cur+1,true);
+addEventListener('keydown',e=>{ if(e.key==='ArrowRight'||e.key==='ArrowDown')goTo(cur+1,true);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')goTo(cur-1,true); });
+
+/* ===================== TOGGLES ===================== */
+let beating=false, beamOn=true;
+const bBeam=document.getElementById('btnBeam'), bBeat=document.getElementById('btnBeat');
+bBeam.onclick=()=>{beamOn=!beamOn; bBeam.classList.toggle('on',beamOn); beamGroup.visible=beamOn; contact.visible=beamOn;};
+bBeat.onclick=()=>{beating=!beating; bBeat.classList.toggle('on',beating);};
+document.getElementById('btnReset').onclick=()=>{const v=VIEWS[cur],w=worldProbeFor(v); camera.position.copy(w.camPos); controls.target.copy(w.camTgt);};
+document.getElementById('btnDemo').onclick=()=>{document.getElementById('intro').style.display='none'; if(!playing){playing=true;nPlay.textContent='⏸ השהה';} restartStepTimer();};
+document.getElementById('btnPractice').onclick=openQuiz;
+
+/* intro overlay */
+document.getElementById('startDemo').onclick=()=>{document.getElementById('intro').style.display='none'; playing=true; nPlay.textContent='⏸ השהה'; restartStepTimer();};
+document.getElementById('startPractice').onclick=()=>{document.getElementById('intro').style.display='none'; openQuiz();};
+
+/* ===================== 2D ECHO MONITOR (realistic grayscale ultrasound) ===================== */
+const ec=document.getElementById('echoCanvas'), ex=ec.getContext('2d');
+const EW=280,EH=220, SEC_A0=Math.PI*0.74,SEC_A1=Math.PI*0.26,SEC_R=EH-18,SEC_APX=6;
+// pre-rendered speckle tiles (the characteristic ultrasound grain)
+function makeSpeckle(){const c=document.createElement('canvas');c.width=EW;c.height=EH;const x=c.getContext('2d');
+  const im=x.createImageData(EW,EH);for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=255;}x.putImageData(im,0,0);return c;}
+const SPECKLES=[makeSpeckle(),makeSpeckle(),makeSpeckle(),makeSpeckle(),makeSpeckle()];
+function sectorPath(c){c.beginPath();c.moveTo(EW/2,SEC_APX);c.arc(EW/2,SEC_APX,SEC_R,SEC_A0,SEC_A1,true);c.closePath();}
+const WALL={hi:'#cfcfca',lo:'#6f7370'}, WALL2={hi:'#bdbdb8',lo:'#5a5e5b'}, BRIGHT={hi:'#e6e6e1',lo:'#9a9c98'};
+function tissue(c,cx,cy,rx,ry,sh,rot=0){c.save();c.translate(cx,cy);c.rotate(rot);
+  const g=c.createRadialGradient(0,-ry*0.3,2,0,0,Math.max(rx,ry));g.addColorStop(0,sh.hi);g.addColorStop(1,sh.lo);
+  c.beginPath();c.ellipse(0,0,rx,ry,0,0,Math.PI*2);c.fillStyle=g;c.fill();c.restore();}
+function cavity(c,cx,cy,rx,ry,label,rot=0){c.save();c.translate(cx,cy);c.rotate(rot);
+  c.beginPath();c.ellipse(0,0,rx,ry,0,0,Math.PI*2);c.fillStyle='#050607';c.fill();c.restore();
+  if(label){c.fillStyle='#eef2ec';c.font='bold 10px Segoe UI';c.textAlign='center';c.fillText(label,cx,cy+3);}}
+function vline(c,x1,y1,x2,y2,w){c.strokeStyle='#f4f6f0';c.lineWidth=w;c.lineCap='round';c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}
+function colorBox(c,cx,cy,w,h,dir){c.save();c.beginPath();c.ellipse(cx,cy,w,h,0,0,Math.PI*2);c.clip();
+  for(let yy=cy-h;yy<cy+h;yy+=4)for(let xx=cx-w;xx<cx+w;xx+=4){const n=Math.random();const toward=dir==='in'?n>0.25:n>0.7;const a=0.4+Math.random()*0.35;
+    c.fillStyle=toward?`rgba(${200+(Math.random()*55|0)},${60+(Math.random()*60|0)},40,${a})`:`rgba(40,${90+(Math.random()*60|0)},${200+(Math.random()*55|0)},${a})`;
+    c.fillRect(xx,yy,4,4);}c.restore();}
+function spectral(c,baseY,h,mode,t){c.save();c.beginPath();c.rect(14,baseY,EW-28,h);c.clip();
+  c.fillStyle='#000';c.fillRect(14,baseY,EW-28,h);const bl=baseY+h*0.62;
+  c.strokeStyle='#2a2a2a';c.lineWidth=1;c.beginPath();c.moveTo(14,bl);c.lineTo(EW-14,bl);c.stroke();
+  c.strokeStyle='#eaeaea';c.lineWidth=1.4;c.beginPath();
+  for(let px=0;px<EW-28;px++){let y=0;
+    if(mode==='EA'){const ph=(px/40+t*1.6)%2,f=ph%1;y=ph<1?Math.sin(f*Math.PI)*(f<.5?h*0.5:h*0.34):0;}
+    else{const ph=(px/55+t*1.3)%1.6;y=ph<1?Math.sin(ph*Math.PI)*h*0.5:0;}
+    c.lineTo(14+px,mode==='EA'?bl-y:bl+y);}c.stroke();
+  c.fillStyle='#cfe9cf';c.font='8px Segoe UI';c.textAlign='left';
+  if(mode==='EA'){c.fillText('E',18,baseY+10);c.fillText('A',46,baseY+18);}else c.fillText('PA',18,baseY+10);c.restore();}
+function drawAnatomy(c,v,t){
+  const beat=(Math.sin(t*2*Math.PI/0.9)+1)/2, cx=EW/2, cy=112;
+  const WB='#a7a9a2', WBR='#d2d4cc', DK='#060708';
+  const band=(x,y,rx,ry,col)=>{c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fillStyle=col;c.fill();};
+  const lbl=(x,y,s,sz=11)=>{c.fillStyle='#eef2ec';c.font='bold '+sz+'px Segoe UI';c.textAlign='center';c.fillText(s,x,y);};
+  c.lineCap='round';
+  if(v.echo==='longaxis4'){
+    band(cx-4,46,82,11,WBR);
+    band(cx-4,62,70,8,DK);
+    band(cx-4,76,74,6,'#bcbeb7');
+    band(cx-16,122,82,48,WB);
+    band(cx-26,122,58,34,DK);
+    band(cx-18,170,76,9,WBR);
+    lbl(cx-46,126,'LV'); c.fillStyle='#cfe0cf';c.font='9px Segoe UI';c.textAlign='center';c.fillText('RV',cx-4,59);
+    const mo=5+beat*15;
+    c.strokeStyle='#f4f6f0';c.lineWidth=3.2;
+    c.beginPath();c.moveTo(cx+30,100);c.lineTo(cx+30-mo,123);c.stroke();
+    c.beginPath();c.moveTo(cx+32,148);c.lineTo(cx+32-mo*0.7,128);c.stroke();
+    c.fillStyle='#eef2ec';c.font='9px Segoe UI';c.fillText('MV',cx+42,110);
+    band(cx+66,132,30,30,WB); band(cx+66,132,21,21,DK); lbl(cx+66,135,'LA',10);
+  } else if(v.echo==='lvot'){
+    band(cx-8,46,80,11,WBR); band(cx-8,62,64,8,DK);
+    band(cx-24,122,70,44,WB); band(cx-32,122,50,30,DK); band(cx-24,167,66,9,WBR);
+    lbl(cx-48,126,'LV');
+    c.strokeStyle='#cbcdc5';c.lineWidth=7;
+    c.beginPath();c.moveTo(cx-30,92);c.lineTo(cx+6,86);c.lineTo(cx+34,70);c.lineTo(cx+58,52);c.stroke();
+    c.beginPath();c.moveTo(cx+10,130);c.lineTo(cx+38,108);c.lineTo(cx+66,82);c.stroke();
+    c.save();c.beginPath();c.moveTo(cx+8,94);c.lineTo(cx+56,56);c.lineTo(cx+66,80);c.lineTo(cx+24,112);c.closePath();c.fillStyle=DK;c.fill();c.restore();
+    c.fillStyle='#eef2ec';c.font='bold 10px Segoe UI';c.textAlign='center';c.fillText('Ao',cx+48,74);
+    c.strokeStyle='#f4f6f0';c.lineWidth=2.4;const av=beat;
+    c.beginPath();c.moveTo(cx+14,104);c.lineTo(cx+20+av*5,90);c.stroke();
+    c.beginPath();c.moveTo(cx+18,118);c.lineTo(cx+26+av*4,107);c.stroke();
+    band(cx+44,152,24,22,WB); band(cx+44,152,17,15,DK); lbl(cx+44,155,'LA',9);
+  } else if(v.echo==='shortPap'){
+    c.strokeStyle='#aaaca5';c.lineWidth=13;c.beginPath();c.arc(cx,cy-22,52,Math.PI*1.12,Math.PI*1.88,false);c.stroke();
+    band(cx,cy+6,45-beat*5,45-beat*5,WB); band(cx,cy+6,34-beat*5,34-beat*5,DK);
+    band(cx-15,cy+22,7,7,'#cfd1ca'); band(cx+15,cy+22,7,7,'#cfd1ca');
+    lbl(cx,cy+10,'LV'); c.fillStyle='#cfe0cf';c.font='9px Segoe UI';c.textAlign='center';c.fillText('RV',cx,cy-40);
+  } else if(v.echo==='laao'){
+    c.strokeStyle='#b0b2ab';c.lineWidth=14;c.beginPath();c.arc(cx-2,cy+2,42,Math.PI*1.04,Math.PI*2.02,false);c.stroke();
+    band(cx,cy-4,26,26,WB); band(cx,cy-4,20,20,DK);
+    c.strokeStyle='#f2f4ee';c.lineWidth=2.4;for(let a=0;a<3;a++){const an=a*2*Math.PI/3+Math.PI/2+beat*.25;c.beginPath();c.moveTo(cx,cy-4);c.lineTo(cx+Math.cos(an)*19,cy-4+Math.sin(an)*19);c.stroke();}
+    lbl(cx,cy-1,'Ao',10);
+    band(cx,cy+46,30,24,WB); band(cx,cy+46,22,17,DK); lbl(cx,cy+49,'LA',10);
+    band(cx-46,cy+4,24,22,WB); band(cx-46,cy+4,16,15,DK); c.fillStyle='#cfe0cf';c.font='9px Segoe UI';c.fillText('RA',cx-46,cy+7);
+    c.fillStyle='#cfe0cf';c.font='9px Segoe UI';c.fillText('PA',cx+40,cy-30);
+  } else if(v.echo==='doppler'){
+    c.strokeStyle='#c6c8c1';c.lineWidth=7;c.beginPath();c.moveTo(cx,58);c.lineTo(cx,122);c.stroke();
+    band(cx-24,92,27,46,WB); band(cx-23,92,16,36,DK); lbl(cx-24,96,'LV');
+    band(cx+22,96,23,40,WB); band(cx+21,96,13,30,DK); c.fillStyle='#cfe0cf';c.font='bold 10px Segoe UI';c.fillText('RV',cx+22,99);
+    const mo=4+beat*9;c.strokeStyle='#f4f6f0';c.lineWidth=2.6;
+    c.beginPath();c.moveTo(cx-10,120);c.lineTo(cx-10-mo,134);c.stroke();
+    c.beginPath();c.moveTo(cx+9,120);c.lineTo(cx+9+mo,132);c.stroke();
+    band(cx-20,152,24,22,WB); band(cx-20,152,16,15,DK); lbl(cx-20,155,'LA',10);
+    band(cx+20,152,22,20,WB); band(cx+20,152,15,14,DK); c.fillStyle='#cfe0cf';c.font='bold 10px Segoe UI';c.fillText('RA',cx+20,155);
+  } else if(v.echo==='rightflow'){
+    band(cx-16,cy+14,28,40,WB); band(cx-16,cy+16,17,28,DK); lbl(cx-16,cy+18,'RV');
+    c.strokeStyle='#c6c8c1';c.lineWidth=8;
+    c.beginPath();c.moveTo(cx+2,cy+6);c.lineTo(cx+30,cy-20);c.lineTo(cx+54,cy-24);c.stroke();
+    c.beginPath();c.moveTo(cx+14,cy+24);c.lineTo(cx+38,cy-4);c.lineTo(cx+56,cy-8);c.stroke();
+    c.save();c.beginPath();c.moveTo(cx+4,cy+4);c.lineTo(cx+30,cy-18);c.lineTo(cx+54,cy-22);c.lineTo(cx+56,cy-10);c.lineTo(cx+38,cy-2);c.lineTo(cx+14,cy+22);c.closePath();c.fillStyle=DK;c.fill();c.restore();
+    c.strokeStyle='#f4f6f0';c.lineWidth=2.4;c.beginPath();c.moveTo(cx+12,cy+4);c.lineTo(cx+20-beat*6,cy-8);c.stroke();
+    c.fillStyle='#eef2ec';c.font='bold 10px Segoe UI';c.textAlign='center';c.fillText('PA',cx+52,cy-26);
+  }
+}
+function drawFlow(c,v,t){
+  const cy=112;
+  if(v.echo==='doppler'){ colorBox(c,EW/2-12,130,14,18,'in'); spectral(c,166,48,'EA',t); }
+  else if(v.echo==='rightflow'){ colorBox(c,EW/2+30,cy-14,14,26,'out'); spectral(c,166,48,'sys',t); }
+  else if(v.echo==='laao'){ colorBox(c,EW/2+24,cy-22,15,12,'out'); }
+}
+function drawEchoOn(c,W,H,v,t){
+  c.clearRect(0,0,W,H); c.save(); c.scale(W/EW,H/EH);
+  c.save(); sectorPath(c); c.clip();
+  c.fillStyle='#000'; c.fillRect(0,0,EW,EH);
+  const nf=c.createRadialGradient(EW/2,SEC_APX+6,2,EW/2,SEC_APX+6,90); nf.addColorStop(0,'rgba(120,125,120,0.22)'); nf.addColorStop(1,'rgba(0,0,0,0)');
+  c.fillStyle=nf; c.fillRect(0,0,EW,EH);
+  drawAnatomy(c,v,t);
+  c.globalCompositeOperation='overlay'; c.globalAlpha=0.55; c.drawImage(SPECKLES[Math.floor(t*12)%SPECKLES.length],0,0); c.globalAlpha=1; c.globalCompositeOperation='source-over';
+  const dg=c.createLinearGradient(0,SEC_APX,0,SEC_APX+SEC_R); dg.addColorStop(0,'rgba(0,0,0,0)'); dg.addColorStop(0.7,'rgba(0,0,0,0)'); dg.addColorStop(1,'rgba(0,0,0,0.5)');
+  c.fillStyle=dg; c.fillRect(0,0,EW,EH);
+  drawFlow(c,v,t);
+  c.restore();
+  c.strokeStyle='#3a4a44'; c.lineWidth=1; sectorPath(c); c.stroke();
+  c.fillStyle='#5a6b62'; c.font='8px monospace'; c.textAlign='left'; for(let d=1;d<=4;d++){const yy=SEC_APX+d*(SEC_R/4); c.fillText(d+'cm',4,yy);}
+  c.fillStyle='#c9b06a'; const fy=SEC_APX+SEC_R*0.5; c.beginPath(); c.moveTo(10,fy); c.lineTo(15,fy-4); c.lineTo(15,fy+4); c.closePath(); c.fill();
+  c.fillStyle='#cfd6cf'; c.font='8px monospace'; c.textAlign='center'; c.fillText('Cardiac · 8MHz',EW/2,11);
+  c.restore();
+}
+
+/* ===================== PRACTICE — identify the view from the live ultrasound ===================== */
+const quizEl=document.getElementById('quiz'), quizCard=document.getElementById('quizCard');
+let practiceCanvases=[];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function openQuiz(){
+  practiceCanvases=[]; let answered=0,correct=0;
+  const order=shuffle(VIEWS.map((v,i)=>i)); const total=order.length;
+  quizCard.innerHTML=`<h2>🎓 תרגול — זיהוי מנח מהאולטרסאונד</h2>
+    <div class="qsub">צפה בתמונת האולטרסאונד החיה (בדיוק כפי שהיא נראית במכשיר) וזהה איזה מנח מפיק אותה.</div>
+    <div id="qlist"></div><div class="score" id="qscore" style="display:none"></div>
+    <button class="close" id="qclose">סגור וחזור להדגמה</button>`;
+  const list=quizCard.querySelector('#qlist');
+  order.forEach((vi,qi)=>{
+    const v=VIEWS[vi];
+    const qd=document.createElement('div'); qd.className='q';
+    qd.innerHTML=`<div class="qt">${qi+1}. איזה מנח מפיק את תמונת האולטרסאונד הזו?</div>
+      <canvas class="pqcanvas" width="300" height="236"></canvas>`;
+    const optWrap=document.createElement('div');
+    const opts=shuffle([vi,...shuffle(VIEWS.map((x,k)=>k).filter(k=>k!==vi)).slice(0,3)]);
+    opts.forEach(oi=>{const b=document.createElement('button');b.className='opt';b.textContent=VIEWS[oi].he;b.dataset.oi=oi;
+      b.onclick=()=>{ if(qd.dataset.done)return; qd.dataset.done='1'; answered++;
+        if(oi===vi){b.classList.add('correct');correct++;} else {b.classList.add('wrong');[...optWrap.children].forEach(x=>{if(+x.dataset.oi===vi)x.classList.add('correct');});}
+        const fb=qd.querySelector('.feedback'); fb.style.display='block'; fb.innerHTML=`<b>${v.he}</b> — ${v.site}`;
+        if(answered===total){const sc=quizCard.querySelector('#qscore');sc.style.display='block';
+          sc.innerHTML=`ציון: <b>${correct}/${total}</b> · ${correct===total?'מצוין! אתה מזהה את כל המנחים 🐾':'כדאי לחזור על ההדגמה למנחים שטעית בהם'}`;}};
+      optWrap.appendChild(b);});
+    qd.appendChild(optWrap);
+    const fb=document.createElement('div'); fb.className='feedback'; qd.appendChild(fb);
+    list.appendChild(qd);
+    const cv=qd.querySelector('canvas'); practiceCanvases.push({ctx:cv.getContext('2d'),W:cv.width,H:cv.height,view:v});
+  });
+  quizCard.querySelector('#qclose').onclick=()=>{quizEl.style.display='none'; practiceCanvases=[];};
+  quizEl.style.display='flex';
+}
+
+/* ===================== RENDER LOOP ===================== */
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  if(tween)tween(performance.now());
+
+  if(beating){const ph=(t%0.9)/0.9,c=Math.pow(Math.sin(ph*Math.PI),2);
+    for(const b of beaters){const k=1+b.amp*c;b.m.scale.set(b.s.x*k,b.s.y*k,b.s.z*k);} heart.rotation.y=Math.sin(t*2)*0.01;}
+  else {for(const b of beaters)b.m.scale.copy(b.s); heart.rotation.y=0;}
+
+  // live exam micro-motion
+  if(!tween){ probe.rotation.z=probeBaseRot.z+Math.sin(t*1.25)*0.02; probe.rotation.x=probeBaseRot.x+Math.sin(t*0.85+1.3)*0.014; }
+
+  if(beamOn){const half=THREE.MathUtils.degToRad(SECTOR_DEG/2),a=Math.sin(t*3)*half;
+    scanLine.position.x=Math.sin(a)*SECTOR_LEN/2; scanLine.rotation.z=a; beamMat.opacity=0.15+0.05*Math.sin(t*4);}
+
+  // demonstration auto-advance
+  if(playing && !tween){ const el=performance.now()-stepStart; nBar.style.width=Math.min(100,el/STEP_MS*100)+'%';
+    if(el>=STEP_MS) goTo(cur+1,false); }
+  else if(!playing){ nBar.style.width='0%'; }
+
+  controls.update(); renderer.render(scene,camera);
+  if(usMode==='model') drawEchoOn(ex,ec.width,ec.height,VIEWS[cur],t);   // main monitor (model) — synced to current view
+  if(quizEl.style.display==='flex'){ for(const p of practiceCanvases) drawEchoOn(p.ctx,p.W,p.H,p.view,t); } // practice — same renderer
+}
+
+/* ===================== monitor: drag to move + enlarge ===================== */
+const monitor=document.getElementById('monitor'), mHead=document.getElementById('mHead');
+let mDrag=null;
+mHead.addEventListener('mousedown',e=>{ if(e.target.tagName==='BUTTON')return;
+  const r=monitor.getBoundingClientRect(); mDrag={dx:e.clientX-r.left,dy:e.clientY-r.top};
+  monitor.style.right='auto'; monitor.style.bottom='auto'; monitor.style.left=r.left+'px'; monitor.style.top=r.top+'px'; e.preventDefault(); });
+addEventListener('mousemove',e=>{ if(!mDrag)return;
+  let x=e.clientX-mDrag.dx, y=e.clientY-mDrag.dy;
+  x=Math.max(4,Math.min(innerWidth-monitor.offsetWidth-4,x)); y=Math.max(4,Math.min(innerHeight-monitor.offsetHeight-4,y));
+  monitor.style.left=x+'px'; monitor.style.top=y+'px'; });
+addEventListener('mouseup',()=>mDrag=null);
+const M_SIZES=[300,440,600]; let mSi=0;
+document.getElementById('mSize').onclick=()=>{ mSi=(mSi+1)%M_SIZES.length; monitor.style.width=M_SIZES[mSi]+'px'; };
+document.getElementById('mReset').onclick=()=>{ monitor.style.left='auto'; monitor.style.top='auto'; monitor.style.right='14px'; monitor.style.bottom='120px'; monitor.style.width='300px'; mSi=0; };
+
+/* ===================== MODEL ⇄ REAL ULTRASOUND toggle ===================== */
+let usMode='model';
+const modeModel=document.getElementById('modeModel'), modeReal=document.getElementById('modeReal');
+const realVid=document.getElementById('realVid'), realImg=document.getElementById('realImg'),
+      realPh=document.getElementById('realPh'), syncBadge=document.getElementById('syncBadge');
+function hideRealMedia(){ realVid.style.display='none'; realImg.style.display='none'; realPh.style.display='none'; try{realVid.pause();}catch(e){} }
+function loadReal(v){
+  hideRealMedia();
+  const base='real/'+v.id;
+  tryVid(0);
+  function tryVid(i){ const ext=['mp4','webm']; if(i>=ext.length){ tryImg(0); return; }
+    realVid.onerror=()=>tryVid(i+1);
+    realVid.oncanplay=()=>{ hideRealMedia(); realVid.style.display='block'; realVid.play().catch(()=>{}); };
+    realVid.src=base+'.'+ext[i]; realVid.load(); }
+  function tryImg(i){ const ext=['gif','jpg','jpeg','png','webp']; if(i>=ext.length){ showPh(); return; }
+    const im=new Image(); im.onload=()=>{ hideRealMedia(); realImg.src=im.src; realImg.style.display='block'; }; im.onerror=()=>tryImg(i+1); im.src=base+'.'+ext[i]; }
+  function showPh(){ hideRealMedia(); realPh.style.display='flex';
+    realPh.innerHTML=`<div style="font-size:24px">🎬</div><div><b>אין עדיין קליפ אמיתי למנח זה</b></div>
+      <div>שבץ קובץ <code>real/${v.id}.mp4</code> &nbsp;(או .webm / .gif / .jpg)<br>מבדיקת אקו אמיתית מהמרפאה — והוא יופיע כאן אוטומטית, מסונכרן למנח.</div>`; }
+}
+function setMode(m){ usMode=m;
+  modeModel.classList.toggle('on',m==='model'); modeReal.classList.toggle('on',m==='real');
+  if(m==='model'){ hideRealMedia();
+    document.getElementById('mTitle').textContent='2D ECHO · דגם'; syncBadge.textContent='⟵ הקרן הצהובה בתלת-מימד = החתך שמופיע כאן · גרור לי הזיז · ⤢ להגדלה'; }
+  else { document.getElementById('mTitle').textContent='REAL US · אקו אמיתי';
+    syncBadge.innerHTML='🎥 אקו אמיתי (לולאת ייחוס) — שבץ קליפים מהמרפאה בתיקיית <code>real/</code>'; loadReal(VIEWS[cur]); }
+}
+modeModel.onclick=()=>setMode('model');
+modeReal.onclick=()=>setMode('real');
+
+goTo(0,false);
+animate();
+document.getElementById('load').style.display='none';
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>
