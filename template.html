@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>תבנית אקו תקין — 19 המנחים התקניים | HeartVets / BSE</title>
+<style>
+  :root{
+    --bg:#070b16; --panel:#0e1526; --panel2:#111a30; --line:#1d2942;
+    --accent:#34d1bf; --accent2:#6aa6ff; --warn:#ffb454; --bad:#ff6b6b; --ok:#5fd07a;
+    --txt:#e8eef9; --dim:#9fb0cc; --rp:#6aa6ff; --rsa:#34d1bf; --la:#5fd07a; --lc:#c08cff; --dop:#ffb454;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI","Assistant",system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+  body{background:
+    radial-gradient(900px 500px at 50% -8%,rgba(52,209,191,.10),transparent 60%),
+    radial-gradient(700px 500px at 90% 110%,rgba(106,166,255,.08),transparent 60%),
+    var(--bg);min-height:100vh;padding:0 0 70px}
+  a{color:inherit}
+
+  /* TOP BAR */
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(8,12,22,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:11px 20px;flex-wrap:wrap}
+  .topbar .home{font-size:13px;font-weight:700;color:var(--accent);text-decoration:none;border:1px solid var(--line);
+    padding:6px 13px;border-radius:9px;transition:.15s}
+  .topbar .home:hover{background:#15203a}
+  .topbar .ttl{font-size:14.5px;font-weight:800}
+  .topbar .grow{flex:1}
+  .toggle{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);cursor:pointer;user-select:none;
+    border:1px solid var(--line);padding:6px 12px;border-radius:9px}
+  .toggle input{accent-color:var(--accent)}
+
+  /* HERO */
+  header.hero{text-align:center;padding:42px 20px 20px;position:relative}
+  header.hero h1{font-size:27px;font-weight:800;letter-spacing:.2px}
+  header.hero .en{direction:ltr;color:var(--dim);font-size:13.5px;margin-top:6px}
+  header.hero .lead{max-width:760px;margin:16px auto 0;color:var(--txt);opacity:.92;font-size:14.5px}
+  .source{margin-top:14px;display:inline-block;font-size:11.5px;color:var(--dim);border:1px solid var(--line);
+    border-radius:20px;padding:5px 15px}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 18px}
+
+  /* LEGEND / ABBREVIATIONS */
+  .legend{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:16px;padding:18px 20px;margin:26px 0}
+  .legend h3{font-size:15px;margin-bottom:12px;color:var(--accent2)}
+  .abbr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 18px}
+  .abbr{font-size:12.5px;color:var(--dim);padding:3px 0;border-bottom:1px dashed #1a2740}
+  .abbr b{color:var(--txt);font-weight:700}
+
+  /* GROUP */
+  .group{margin-top:34px}
+  .group-hd{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+  .group-hd .dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+  .group-hd h2{font-size:19px;font-weight:800}
+  .group-hd .en{direction:ltr;font-size:12px;color:var(--dim);font-weight:600}
+  .group-sub{color:var(--dim);font-size:12.5px;margin:0 24px 16px;line-height:1.5}
+
+  /* CARDS GRID */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px}
+
+  .view{background:linear-gradient(180deg,rgba(18,27,48,.92),rgba(11,17,35,.92));
+    border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
+    transition:.18s;position:relative}
+  .view:hover{transform:translateY(-3px);box-shadow:0 18px 42px rgba(0,0,0,.45)}
+  .view .vhd{padding:13px 16px 11px;border-bottom:1px solid var(--line);display:flex;gap:11px;align-items:flex-start}
+  .vnum{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;
+    font-weight:800;font-size:14px;color:#071018}
+  .vtitles{flex:1;min-width:0}
+  .vtitles .he{font-size:14.5px;font-weight:800;line-height:1.35}
+  .vtitles .en{direction:ltr;font-size:11.5px;color:var(--dim);font-weight:600;margin-top:2px}
+  .vtitles .ab{direction:ltr;font-size:10.5px;color:var(--accent);margin-top:3px;opacity:.85}
+
+  .vsig{height:148px;background:radial-gradient(circle at 50% 42%,#0a1326,#060a14);
+    display:grid;place-items:center;border-bottom:1px solid var(--line)}
+  .vsig svg{width:auto;height:128px}
+
+  .vbody{padding:14px 16px 16px;display:flex;flex-direction:column;gap:11px;flex:1}
+
+  .orig{background:#0a1428;border:1px solid #15233f;border-radius:10px;padding:9px 12px;direction:ltr;
+    font-size:11.5px;color:#b9cbe8;line-height:1.5;display:none}
+  .orig.show{display:block}
+  .orig .lab{display:block;font-size:9.5px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin-bottom:3px;direction:rtl}
+
+  .block{font-size:12.8px}
+  .block .lab{display:inline-block;font-size:10px;letter-spacing:.5px;font-weight:800;text-transform:uppercase;
+    padding:1px 8px;border-radius:6px;margin-bottom:5px}
+  .lab.trans{background:rgba(106,166,255,.15);color:var(--accent2)}
+  .lab.expl{background:rgba(52,209,191,.14);color:var(--accent)}
+  .lab.meas{background:rgba(255,180,84,.14);color:var(--warn)}
+  .block p{color:#d6e0f0}
+  .block.meas p{color:#f0d9b4}
+
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:20px;
+    background:#13203a;color:var(--accent2);border:1px solid #1d2f4e}
+  .tag.warn{background:rgba(255,107,107,.13);color:var(--bad);border-color:rgba(255,107,107,.3)}
+
+  /* QUIZ */
+  .quiz{margin-top:42px;background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:18px;padding:24px}
+  .quiz h2{font-size:20px;font-weight:800;margin-bottom:4px}
+  .quiz .qsub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  .q{border-top:1px solid var(--line);padding:16px 0}
+  .q:first-of-type{border-top:none}
+  .q .qq{font-size:14px;font-weight:700;margin-bottom:10px}
+  .q .qq .qn{color:var(--accent);margin-inline-end:6px}
+  .opts{display:flex;flex-direction:column;gap:7px}
+  .opt{text-align:right;background:#0d1830;border:1px solid var(--line);border-radius:10px;padding:9px 13px;
+    font-size:13px;color:var(--txt);cursor:pointer;transition:.13s;font-family:inherit}
+  .opt:hover{border-color:var(--accent2)}
+  .opt.correct{background:rgba(95,208,122,.16);border-color:var(--ok);color:#cdeccf}
+  .opt.wrong{background:rgba(255,107,107,.14);border-color:var(--bad);color:#f3c9c9}
+  .qfb{font-size:12.5px;margin-top:9px;padding:9px 12px;border-radius:9px;display:none;line-height:1.55}
+  .qfb.show{display:block}
+  .qfb.good{background:rgba(95,208,122,.1);color:#bfe6c4;border:1px solid rgba(95,208,122,.25)}
+  .scorebar{margin-top:18px;font-size:14px;font-weight:700;text-align:center;color:var(--accent);min-height:22px}
+
+  footer{text-align:center;color:var(--dim);font-size:12px;margin-top:42px;line-height:1.7;padding:0 18px}
+  footer code{background:#15203a;color:var(--accent);padding:1px 7px;border-radius:5px;font-size:11px}
+
+  @media(max-width:560px){ .vsig svg{height:110px} header.hero h1{font-size:22px} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="home" href="index.html">⌂ תפריט</a>
+  <span class="ttl">🫀 תבנית אקו תקין — 19 המנחים</span>
+  <span class="grow"></span>
+  <label class="toggle"><input type="checkbox" id="engToggle"> הצג הוראה מקורית (אנגלית)</label>
+</div>
+
+<header class="hero">
+  <h1>תבנית אקו-לב תקין — 19 המנחים התקניים</h1>
+  <div class="en">Normal Echocardiogram Template · Recommended Standard Views</div>
+  <p class="lead">מפת-הדרכים המלאה לבדיקת אקו-לב סטנדרטית בכלב/חתול: כל מנח עם החתימה הצפויה על המסך,
+  ההוראה הטכנית המקורית, תרגום מלא, הסבר מעמיק ומה מודדים בו — מסודר לפי חלון אקוסטי וסדר ביצוע.</p>
+  <span class="source">מקור: HeartVets · מאומץ מ-British Society of Echocardiography</span>
+</header>
+
+<div class="wrap">
+
+  <div class="legend">
+    <h3>🔑 פיענוח ראשי-תיבות</h3>
+    <div class="abbr-grid" id="abbrGrid"></div>
+  </div>
+
+  <div id="groups"></div>
+
+  <!-- QUIZ -->
+  <div class="quiz">
+    <h2>🧠 חידון — בדוק את עצמך</h2>
+    <div class="qsub">10 שאלות על המנחים, ההגדרות הטכניות והפתולוגיות. לחץ על תשובה.</div>
+    <div id="quizBox"></div>
+    <div class="scorebar" id="scorebar"></div>
+  </div>
+
+</div>
+
+<footer>
+  הדמיה חינוכית · נבנה ל-ד״ר גיל קרן · Pet Care<br>
+  התבנית המקורית: <code>www.heartvets.co.uk</code> · מאומצת מ-British Society of Echocardiography
+</footer>
+
+<script>
+/* ===== ABBREVIATIONS ===== */
+const ABBR = [
+  ["RP / RPLA","Right Parasternal (Long Axis) — ימני פרה-סטרנלי, ציר ארוך"],
+  ["RPSA / SA","Right Parasternal Short Axis — ימני פרה-סטרנלי, ציר קצר"],
+  ["LV / RV","Left / Right Ventricle — חדר שמאל / ימין"],
+  ["LA / RA","Left / Right Atrium — עלייה שמאל / ימין"],
+  ["MV / TV","Mitral / Tricuspid Valve — מסתם דו/תלת-צניפי"],
+  ["AoV / Ao","Aortic Valve / Aorta — מסתם אאורטלי / אבי-עורקים"],
+  ["LVOT / RVOT","L/R Ventricular Outflow Tract — מסלול יציאת חדר"],
+  ["PA / MPA / PV","Pulmonary Artery / Main PA / Pulmonic Valve — עורק ריאה / מסתם פולמונרי"],
+  ["IAS","Inter-Atrial Septum — מחיצה בין-פרוזדורית"],
+  ["EPSS","E-Point Septal Separation — מרחק נקודת E מהמחיצה"],
+  ["FS%","Fractional Shortening — קיצור מקטעי (תפקוד סיסטולי)"],
+  ["PW / CW","Pulsed / Continuous Wave Doppler — דופלר פעימתי / רציף"],
+  ["MR / TR","Mitral / Tricuspid Regurgitation — דלף מיטרלי / טריקוספידלי"],
+  ["AR / PI","Aortic Regurg. / Pulmonic Insufficiency — דלף אאורטלי / פולמונרי"],
+  ["VSD / ASD","Ventricular / Atrial Septal Defect — פגם מחיצה חדרית / פרוזדורית"],
+  ["PDA","Patent Ductus Arteriosus — צינור עורקי פתוח (מום מולד שכיח)"],
+  ["PS / SAS","Pulmonic / Subaortic Stenosis — היצרות פולמונרית / תת-אאורטלית"],
+  ["PH","Pulmonary Hypertension — יתר-לחץ-דם ריאתי"],
+  ["AF / VPC","Atrial Fibrillation / Ventricular Premature Complex — פרפור פרוזדורים / פעימה מוקדמת"],
+  ["E / A","גלי מילוי דיאסטולי מוקדם (E) ומאוחר/פרוזדורי (A)"],
+];
+
+/* ===== SVG SIGNATURES =====
+   ציורים סכמטיים נקיים שמשחזרים את "החתימה" של כל מנח על מסך האקו (כמו בתבנית המקורית). */
+const W=200,H=158;
+function svg(inner){return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;}
+const S='stroke="#cfe0f5" stroke-width="3.2" fill="none" stroke-linejoin="round" stroke-linecap="round"';
+const ST='stroke="#cfe0f5" stroke-width="2.2" fill="none"';
+const ecg=`<path d="M14 150 h22 l5 -3 l4 9 l5 -22 l5 26 l4 -10 h20 l5 -3 l4 9 l5 -22 l5 26 l4 -10 h28" stroke="#5a6f93" stroke-width="1.6" fill="none"/>`;
+function col(){ // small color-doppler mosaic blob
+  return `<g opacity=".92">
+    <path d="M150 62 l30 -16 l6 12 l-28 18 Z" fill="#e8443a"/>
+    <path d="M156 74 l30 -10 l4 12 l-30 10 Z" fill="#f2b21e"/>
+    <path d="M150 84 l28 -2 l2 12 l-28 4 Z" fill="#2b6df0"/>
+    <rect x="146" y="40" width="50" height="64" fill="none" stroke="#e0405a" stroke-width="1.4" stroke-dasharray="3,2" opacity=".7" transform="rotate(-18 171 72)"/>
+  </g>`;
+}
+function spectral(dir,morph){ // dir: 1 below baseline / -1 above ; morph: 'ea','cw','pdac'
+  const base=96; let waves='';
+  if(morph==='ea'){ // E then A, above baseline (inflow toward probe)
+    waves=`<path d="M16 ${base} q10 -34 20 0 q5 -22 14 0" ${ST} />
+           <path d="M70 ${base} q10 -34 20 0 q5 -22 14 0" ${ST} />
+           <path d="M124 ${base} q10 -34 20 0 q5 -22 14 0" ${ST} />
+           <text x="30" y="56" font-size="11" fill="#9fb0cc">E</text>
+           <text x="48" y="74" font-size="11" fill="#9fb0cc">A</text>`;
+  } else if(morph==='cw'){ // tall systolic envelope below baseline (regurg/outflow)
+    waves=`<path d="M18 ${base} q26 64 52 0" ${ST} />
+           <path d="M78 ${base} q26 64 52 0" ${ST} />
+           <path d="M138 ${base} q14 38 28 0" ${ST} />`;
+  } else { // PDA continuous high-velocity
+    waves=`<path d="M16 ${base} q20 -52 40 -44 q22 6 40 40 q18 28 38 4" ${ST} />
+           <path d="M16 ${base} q20 -28 40 -22 q22 4 40 22 q18 16 38 2" stroke="#7f93b5" stroke-width="1.4" fill="none"/>`;
+  }
+  return `<line x1="10" y1="${base}" x2="190" y2="${base}" stroke="#3a4d72" stroke-width="1.6"/>${waves}`;
+}
+
+const SIG = {
+  // ---- RPLA family (4-chamber long axis "fan") ----
+  rpla4(){return svg(`
+    <path d="M40 26 L150 70 L40 70" ${S}/>            <!-- RV near field -->
+    <path d="M44 78 L168 118 L150 138 L40 96 Z" ${S}/> <!-- LV big -->
+    <path d="M150 70 q14 18 18 48" ${S}/>             <!-- MV funnel right -->
+    <path d="M120 118 q22 14 48 18" ${S}/>            <!-- LA roof -->
+    <text x="92" y="58" font-size="11" fill="#7f93b5">LV</text>
+    <text x="150" y="56" font-size="10" fill="#7f93b5">RV</text>
+    <text x="150" y="132" font-size="10" fill="#7f93b5">LA</text>
+    ${ecg}`);},
+  rplaLV(){return svg(`
+    <path d="M36 30 L176 88 L150 140 L34 92 Z" ${S}/>  <!-- LV optimised, true apex left -->
+    <circle cx="40" cy="61" r="3" fill="#34d1bf"/>
+    <text x="22" y="56" font-size="10" fill="#34d1bf">apex</text>
+    <path d="M150 78 q16 16 20 44" ${ST}/>
+    <text x="92" y="80" font-size="12" fill="#7f93b5">LV</text>
+    ${ecg}`);},
+  rplaLVOT(){return svg(`
+    <path d="M40 60 L150 96 L132 134 L36 100 Z" ${S}/>  <!-- LV horizontal -->
+    <path d="M150 96 L182 56 M150 70 L180 34" ${S}/>     <!-- aorta candy-cane up-right -->
+    <path d="M150 70 q-4 14 0 26" stroke="#cfe0f5" stroke-width="2" fill="none"/> <!-- AoV -->
+    <text x="86" y="92" font-size="11" fill="#7f93b5">LV</text>
+    <text x="168" y="40" font-size="11" fill="#7f93b5">Ao</text>
+    ${ecg}`);},
+  rplaCol(){return svg(`
+    <path d="M40 26 L150 70 L40 70" ${ST}/>
+    <path d="M44 78 L168 118 L150 138 L40 96 Z" ${ST}/>
+    <path d="M150 70 q14 18 18 48" ${ST}/>
+    ${col()}
+    <text x="78" y="60" font-size="10" fill="#7f93b5">LV</text>`);},
+
+  // ---- RPSA family ----
+  saLV(){return svg(`
+    <circle cx="100" cy="78" r="52" ${S}/>            <!-- LV donut -->
+    <path d="M52 60 q-14 18 0 36" ${S}/>              <!-- RV crescent left -->
+    <circle cx="78" cy="104" r="7" fill="#cfe0f5"/>    <!-- papillary 4 o'clock -->
+    <circle cx="122" cy="104" r="7" fill="#cfe0f5"/>   <!-- papillary 8 o'clock -->
+    <text x="92" y="50" font-size="11" fill="#7f93b5">LV</text>
+    <text x="40" y="80" font-size="10" fill="#7f93b5">RV</text>`);},
+  saMmode(){return svg(`
+    <circle cx="100" cy="50" r="30" ${ST}/>
+    <line x1="100" y1="14" x2="100" y2="92" stroke="#34d1bf" stroke-width="2" stroke-dasharray="5,4"/>
+    <path d="M14 118 q16 -26 28 0 t28 0 t28 0 t28 0 t28 0" ${ST}/>  <!-- LV wall trace -->
+    <path d="M14 140 q16 16 28 0 t28 0 t28 0 t28 0 t28 0" stroke="#7f93b5" stroke-width="1.6" fill="none"/>
+    <text x="108" y="20" font-size="9" fill="#34d1bf">cursor</text>
+    <text x="150" y="112" font-size="9" fill="#7f93b5">M-mode</text>`);},
+  saBase(){return svg(`
+    <circle cx="92" cy="74" r="30" ${S}/>             <!-- Ao mercedes -->
+    <line x1="92" y1="44" x2="92" y2="104" ${ST}/>
+    <line x1="66" y1="90" x2="118" y2="60" ${ST}/>
+    <line x1="66" y1="60" x2="118" y2="90" ${ST}/>
+    <path d="M120 86 q34 4 40 34 l-44 6 Z" ${S}/>      <!-- LA bottom-right -->
+    <path d="M62 100 q-20 4 -24 26" ${ST}/>            <!-- RA -->
+    <path d="M70 44 q40 -22 86 8" ${ST}/>             <!-- RVOT/PA wrap top -->
+    <text x="86" y="78" font-size="10" fill="#7f93b5">Ao</text>
+    <text x="128" y="112" font-size="10" fill="#7f93b5">LA</text>`);},
+  saBaseCol(){return svg(`
+    <circle cx="92" cy="74" r="30" ${ST}/>
+    <line x1="92" y1="44" x2="92" y2="104" ${ST}/>
+    <line x1="66" y1="90" x2="118" y2="60" ${ST}/>
+    <line x1="66" y1="60" x2="118" y2="90" ${ST}/>
+    <path d="M70 44 q40 -22 86 8" ${ST}/>
+    ${col()}
+    <text x="86" y="78" font-size="10" fill="#7f93b5">Ao</text>`);},
+
+  rvot(){return svg(`
+    <circle cx="74" cy="86" r="26" ${S}/>             <!-- Ao center -->
+    <line x1="74" y1="60" x2="74" y2="112" ${ST}/><line x1="52" y1="100" x2="96" y2="72" ${ST}/><line x1="52" y1="72" x2="96" y2="100" ${ST}/>
+    <path d="M96 70 q40 -30 90 -8" ${S}/>             <!-- RVOT to PA wrapping right -->
+    <path d="M104 90 q38 -10 78 4" ${ST}/>            <!-- PV / PA wall -->
+    <path d="M150 56 l8 -6 M150 70 l8 -6" ${ST}/>     <!-- PV leaflets -->
+    <text x="66" y="90" font-size="10" fill="#7f93b5">Ao</text>
+    <text x="150" y="44" font-size="10" fill="#7f93b5">PA</text>
+    <line x1="120" y1="64" x2="186" y2="40" stroke="#ffb454" stroke-width="1.6" stroke-dasharray="4,3"/>
+    <text x="160" y="34" font-size="9" fill="#ffb454">PWD</text>`);},
+
+  subcostal(){return svg(`
+    <path d="M100 16 L150 150 L50 150 Z" ${ST}/>       <!-- sector fan -->
+    <path d="M86 70 L100 16 L114 70" ${S}/>           <!-- AoV / outflow -->
+    <line x1="100" y1="16" x2="100" y2="150" stroke="#ffb454" stroke-width="1.8" stroke-dasharray="5,4"/>
+    <ellipse cx="100" cy="120" rx="26" ry="14" ${ST}/>
+    <text x="106" y="40" font-size="10" fill="#ffb454">AoV</text>
+    <text x="84" y="138" font-size="9" fill="#7f93b5">LV</text>`);},
+
+  // ---- Left apical family (triangle, apex up) ----
+  apical4(){return svg(`
+    <path d="M100 18 L40 140 L160 140 Z" ${S}/>        <!-- chamber triangle apex up -->
+    <line x1="100" y1="18" x2="100" y2="140" ${ST}/>   <!-- septum -->
+    <path d="M64 96 L100 88 M100 88 L136 96" ${S}/>    <!-- AV valves -->
+    <text x="64" y="64" font-size="11" fill="#7f93b5">LV</text>
+    <text x="118" y="64" font-size="11" fill="#7f93b5">RV</text>
+    <text x="62" y="132" font-size="10" fill="#7f93b5">LA</text>
+    <text x="120" y="132" font-size="10" fill="#7f93b5">RA</text>
+    <circle cx="100" cy="22" r="3" fill="#5fd07a"/><text x="106" y="22" font-size="9" fill="#5fd07a">apex</text>`);},
+  apicalCol(){return svg(`
+    <path d="M100 18 L40 140 L160 140 Z" ${ST}/>
+    <line x1="100" y1="18" x2="100" y2="140" ${ST}/>
+    <g opacity=".92">
+      <path d="M88 132 l-10 -34 l10 -4 l8 36 Z" fill="#2b6df0"/>   <!-- MR jet into LA -->
+      <path d="M112 132 l10 -30 l8 6 l-8 30 Z" fill="#e8443a"/>    <!-- TR jet into RA -->
+    </g>
+    <text x="58" y="60" font-size="10" fill="#7f93b5">MR</text>
+    <text x="128" y="60" font-size="10" fill="#7f93b5">TR</text>`);},
+  apical5(){return svg(`
+    <path d="M100 18 L40 140 L160 140 Z" ${ST}/>
+    <line x1="100" y1="18" x2="86" y2="140" ${ST}/>
+    <path d="M86 90 L100 18 L114 90 L86 90" ${S}/>     <!-- LVOT / Ao 5th chamber center -->
+    <text x="92" y="60" font-size="10" fill="#7f93b5">LVOT</text>
+    <text x="56" y="120" font-size="10" fill="#7f93b5">LV</text>`);},
+
+  mvInflowPW(){return svg(`${spectral(-1,'ea')}
+    <text x="150" y="118" font-size="9" fill="#7f93b5">PW MV</text>`);},
+  tvCW(){return svg(`${spectral(1,'cw')}
+    <text x="150" y="40" font-size="9" fill="#7f93b5">CW TR</text>
+    <text x="14" y="40" font-size="9" fill="#ff6b6b">→ RVSP</text>`);},
+
+  // ---- Aortic & Left Cranial PA ----
+  aovCol(){return svg(`
+    <path d="M40 64 L150 100 L132 138 L36 104 Z" ${ST}/>
+    <path d="M150 100 L182 60 M150 74 L180 38" ${ST}/>
+    <g opacity=".9"><path d="M120 92 l34 -22 l6 12 l-34 22 Z" fill="#2b6df0"/></g>
+    <text x="160" y="44" font-size="10" fill="#7f93b5">Ao</text>
+    <text x="96" y="120" font-size="9" fill="#7f93b5">AR jet</text>`);},
+  aovPWCW(){return svg(`${spectral(1,'cw')}
+    <text x="150" y="40" font-size="9" fill="#7f93b5">Ao Vmax</text>`);},
+  lcPA(){return svg(`
+    <path d="M30 120 L70 60 L96 70 L60 132 Z" ${S}/>   <!-- RVOT -->
+    <path d="M96 70 q40 -16 80 -8 q4 14 -2 26 q-44 -8 -82 6 Z" ${S}/> <!-- MPA tube -->
+    <path d="M92 64 l6 8 M100 60 l6 8" ${ST}/>          <!-- PV leaflets -->
+    <text x="44" y="100" font-size="10" fill="#7f93b5">RVOT</text>
+    <text x="138" y="58" font-size="10" fill="#7f93b5">MPA</text>
+    <text x="118" y="96" font-size="9" fill="#c08cff">→ PDA?</text>`);},
+  lcPApwcw(){return svg(`${spectral(1,'pdac')}
+    <text x="132" y="40" font-size="9" fill="#7f93b5">PA / PDA</text>`);},
+};
+
+/* ===== THE 19 VIEWS ===== */
+const GROUPS = [
+  {key:"rpla", color:"var(--rp)", he:"חלון ימני פרה-סטרנלי — ציר ארוך", en:"Right Parasternal Long Axis",
+   sub:"מנח-הבית. הכלב שוכב על צד שמאל; המתמר מימין, ICS 4–5. בסיס הלב בימין המסך, אפקס בשמאל."},
+  {key:"rpsa", color:"var(--rsa)", he:"חלון ימני פרה-סטרנלי — ציר קצר", en:"Right Parasternal Short Axis",
+   sub:"סיבוב 90° מהציר הארוך. חתכים רוחביים מהאפקס אל הבסיס — מ-LV עגול ועד ה-'מרצדס' של האאורטה."},
+  {key:"mid", color:"var(--dop)", he:"מוצא חדר ימין · תת-צלעי · מעבר לשמאל", en:"RVOT · Subcostal · → Left Apical",
+   sub:"חקירת המסתם הפולמונרי, מהירות אאורטלית מיטבית מהתת-צלעי, ומעבר לחלון השמאלי-אפיקלי (הכלב מתהפך לצד ימין)."},
+  {key:"apical", color:"var(--la)", he:"חלון שמאלי-אפיקלי — דופלר זרימות", en:"Left Apical — Doppler",
+   sub:"החלון שבו הזרימות מקבילות לקרן → דיוק דופלר מרבי. כאן מכמתים דלפים, תפקוד דיאסטולי ולחץ ריאתי."},
+  {key:"lc", color:"var(--lc)", he:"מסתם אאורטלי · חלון שמאלי-קרניאלי", en:"Aortic Valve · Left Cranial PA",
+   sub:"דלף אאורטלי ומהירות אאורטה, ולסיום החלון השמאלי-קרניאלי לעורק הריאה — איתור PDA והערכת לחץ ריאתי."},
+];
+
+const VIEWS = [
+  // ===== GROUP rpla =====
+  {g:"rpla",sig:"rpla4",
+   he:"ציר ארוך, ארבעה חדרים",en:"Right Parasternal Long Axis (4-Chamber)",ab:"RPLA · 4CH",
+   orig:"Centre on MV, include roof of LA; Incr loop length if AF / VPCs / Tachycardia",
+   trans:"מַרְכֵּז על המסתם המיטרלי, כְּלוֹל את 'גג' העלייה השמאלית; הַגְדֵּל את אורך הלולאה (מספר הפעימות בקליפ) במקרה של פרפור פרוזדורים / פעימות מוקדמות / טכיקרדיה.",
+   expl:"מנח-הפתיחה והבסיס לכל הבדיקה. המסתם המיטרלי במרכז הסקטור, וחובה לכלול את גג ה-LA כדי להעריך הגדלה. כשהקצב לא סדיר (AF/VPC/טכיקרדיה) — מקליטים לולאה ארוכה (יותר פעימות) כדי לתפוס פעימה מייצגת למדידה. טעות נפוצה: סקטור קצר מדי שחותך את גג העלייה.",
+   meas:"התרשמות כללית · גודל ויחסי חדרים · MMVD (עיבוי/צניחת מיטרל) · נוזל פריקרדיאלי.",
+   tags:[["LV"],["RV"],["LA"],["MV"],["MMVD",1]]},
+
+  {g:"rpla",sig:"rplaLV",
+   he:"ציר ארוך, אופטימיזציה לחדר שמאל",en:"RPLA — Left Ventricle",ab:"RPLA · LV",
+   orig:"Centre on LV, include true apex. For measurement of LV volumes",
+   trans:"מַרְכֵּז על החדר השמאלי, כְּלוֹל את הקודקוד (apex) האמיתי. עבור מדידת נפחי החדר השמאלי.",
+   expl:"וריאציה הממוקדת ב-LV, תוך הקפדה לכלול את האפקס האמיתי. זה קריטי למדידת נפחים בשיטת סימפסון (Method of Discs) ולחישוב EF. הסכנה המרכזית: foreshortening — קיצור מדומה של האפקס כשהקרן לא עוברת דרכו → תת-הערכת נפח ו-EF.",
+   meas:"נפח LV דיאסטולי/סיסטולי · EF (Simpson) · אורך ציר ארוך.",
+   tags:[["LV volumes"],["EF / Simpson"],["foreshortening",1]]},
+
+  {g:"rpla",sig:"rplaLVOT",
+   he:"ציר ארוך, מוצא חדר שמאל",en:"RPLA — LV Outflow Tract",ab:"RPLA · LVOT",
+   orig:"Narrow sector width if required to maximise frame rate",
+   trans:"צַמְצֵם את רוחב הסקטור במידת הצורך כדי למקסם את קצב הפריימים (frame rate).",
+   expl:"סיבוב קל מ-4CH חושף את ה-LVOT והאאורטה העולה ('candy cane' — רציפות בין המחיצה לדופן האאורטלי הקדמי). צמצום רוחב הסקטור מעלה את ה-frame rate — חיוני כדי לראות תנועת מסתם מהירה ולאבחן SAM ו-SAS. כאן רואים: מסתם אאורטלי, ראשית אאורטה ו-LVOT.",
+   meas:"קוטר LVOT · מסתם אאורטלי (עיבוי, SAS ring) · רציפות מחיצה-אאורטה.",
+   tags:[["LVOT"],["Ao root"],["SAS",1]]},
+
+  {g:"rpla",sig:"rplaCol",
+   he:"ציר ארוך עם דופלר צבע",en:"RPLA With Colour",ab:"RPLA · Colour",
+   orig:"Colour MV, TV, LVOT & AoV, intra-atrial septum; to include all of any regurgitant/transeptal jets seen.",
+   trans:"דופלר צבע על המיטרלי, הטריקוספידלי, ה-LVOT והמסתם האאורטלי, וכן על המחיצה הבין-פרוזדורית; לכלול את כל סילוני הדלף (regurgitation) או החוצים-מחיצה (transeptal) הנראים.",
+   expl:"הוספת דופלר-צבע על אותו חתך חושפת זרימות לא-תקינות: דלף מיטרלי (MR — חתימת ההיכר של MMVD), דלף טריקוספידלי (TR), דלף אאורטלי (AR), וזרימה דרך המחיצה (VSD/ASD). חובה להגדיר את תיבת הצבע כך שתכסה את כל אורך הסילון — אחרת מזלזלים בחומרה.",
+   meas:"נוכחות וכיוון: MR · TR · AR · VSD · ASD (transeptal).",
+   tags:[["MR",1],["TR",1],["VSD",1],["color box"]]},
+
+  // ===== GROUP rpsa =====
+  {g:"rpsa",sig:"saLV",
+   he:"ציר קצר, חדר שמאל בגובה המיתרים",en:"RPSA — Left Ventricle",ab:"RPSA · LV",
+   orig:"Loop of the LV at chordae level, even papillary muscles, rounded LV",
+   trans:"לולאה של החדר השמאלי בגובה המיתרים (chordae), עם שני שרירים פפילריים סימטריים וחתך LV עגול.",
+   expl:"סיבוב 90° מהציר הארוך — ה-LV נראה כ'דונאט' עגול. הציר נכון רק כששני השרירים הפפילריים סימטריים ('שעון 4 ו-8') וה-LV עגול (לא אליפטי). חתך אלכסוני → תת-הערכת FS%. בעומס לחץ/נפח של RV ה-LV מקבל צורת 'D' (D-shape) — סימן חשוב ל-PH או עומס ימני.",
+   meas:"סימטריה · עובי דפנות · תנועתיות · צורה (D-shape → עומס RV).",
+   tags:[["LV donut"],["papillary"],["D-shape",1]]},
+
+  {g:"rpsa",sig:"saMmode",
+   he:"מוד-M של החדר השמאלי",en:"RPSA — M-mode of LV",ab:"RPSA · M-mode",
+   orig:"Cursor bisecting LV, M-mode through mitral annulus to measure EPSS",
+   trans:"סמן (cursor) החוצה את ה-LV בדיוק במרכזו; M-mode דרך הטבעת המיטרלית למדידת EPSS.",
+   expl:"ה-M-mode נותן רזולוציה זמנית גבוהה למדידת ממדי ה-LV ולחישוב FS%. הסמן חייב לחצות את מרכז ה-LV בניצב לדפנות. EPSS = המרחק בין נקודת E (פתיחת המיטרל) למחיצה — EPSS גדול מעיד על תפקוד סיסטולי ירוד (סמן עקיף ל-EF, בלתי-תלוי בעומס). מדידה leading-edge-to-leading-edge.",
+   meas:"LVIDd/s · IVSd/s · LVFWd/s · FS% · EPSS.",
+   tags:[["FS%"],["EPSS"],["leading-edge"]]},
+
+  {g:"rpsa",sig:"saBase",
+   he:"ציר קצר בבסיס — יחס LA:Ao",en:"RPSA — LA / Ao",ab:"RPSA · LA/Ao",
+   orig:"2D measurements of LA, Ao, PA.",
+   trans:"מדידות דו-ממד של העלייה השמאלית, האאורטה ועורק הריאה.",
+   expl:"בגובה הבסיס האאורטה נראית כ'מרצדס' (שלושה כיסים), ה-LA לצידה, RA ו-RVOT/PA עוטפים. מדידת LA:Ao היא הפרמטר החשוב ביותר להערכת הגדלת העלייה השמאלית (גודש, שלב C ב-MMVD). מודדים בדיאסטולה מוקדמת (כשה-LA מלא ביותר). נורמה בכלב <1.6.",
+   meas:"LA:Ao (כלב <1.6) · קוטר PA · קוטר Ao.",
+   tags:[["LA:Ao"],["Mercedes"],["PA size"]]},
+
+  {g:"rpsa",sig:"saBaseCol",
+   he:"בסיס עם דופלר צבע — מומים מולדים",en:"RPSA — LA/Ao With Colour",ab:"RPSA · base Colour",
+   orig:"Colour interrogation of IAS, TV, Ao root for VSDs",
+   trans:"חקירת צבע של המחיצה הבין-פרוזדורית (IAS), המסתם הטריקוספידלי וראשית האאורטה — לאיתור VSD.",
+   expl:"דופלר-צבע בבסיס מאתר מומים מולדים: VSD (פגם מחיצה חדרית, לרוב perimembranous סמוך לראשית האאורטה), ASD (פגם ב-IAS), ודלף טריקוספידלי. זהו מנח-מפתח בבירור גורים עם איוושה. סילון VSD = זרימה במהירות גבוהה החוצה את המחיצה בסיסטולה.",
+   meas:"VSD · ASD · TR · רציפות ה-IAS.",
+   tags:[["VSD",1],["ASD",1],["congenital",1]]},
+
+  // ===== GROUP mid =====
+  {g:"mid",sig:"rvot",
+   he:"ציר קצר, מוצא חדר ימין (2D+צבע+דופלר)",en:"RPSA — RVOT",ab:"RPSA · RVOT/PA",
+   orig:"2D, Colour and Doppler interrogation of TV, RVOT & PA. PWD gate at level of PV, attempt to line up cursor parallel to flow direction",
+   trans:"חקירת דו-ממד, צבע ודופלר של הטריקוספידלי, מוצא חדר ימין ועורק הריאה. שער (gate) של דופלר פעימתי בגובה המסתם הפולמונרי; נסה ליישר את הסמן במקביל לכיוון הזרימה.",
+   expl:"שלוש התמונות בתא מציגות התקדמות: 2D ← צבע ← דופלר ספקטרלי. ה-RVOT/PA 'עוטף' את האאורטה. שער ה-PWD ממוקם בדיוק בגובה המסתם הפולמונרי. עקרון-העל בכל דופלר: יישור מקבילי לזרימה (זווית <20°) — סטייה זוויתית גוררת תת-הערכת מהירות (cos θ). זהו המנח לאבחון היצרות פולמונרית.",
+   meas:"מהירות פולמונרית (נורמה <1.5 m/s) · PS · PI.",
+   tags:[["PV"],["PS",1],["parallel < 20°"]]},
+
+  {g:"mid",sig:"subcostal",
+   he:"תת-צלעי — מהירות אאורטלית מיטבית",en:"Subcostal (Subxiphoid)",ab:"Subcostal",
+   orig:"PW/CW through AoV",
+   trans:"דופלר פעימתי/רציף דרך המסתם האאורטלי.",
+   expl:"המתמר מתחת לעצם החזה (אזור ה-xiphoid), מכוון אל הראש. חלון זה מיישר את הסמן כמעט במקביל מושלם לזרימה האאורטלית — ולכן נותן את מהירות האאורטה הגבוהה והמדויקת ביותר. חיוני להערכת חומרת SAS/AS: מהירות שנמדדת בחלונות אחרים עלולה להיות נמוכה מהאמיתית.",
+   meas:"Aortic Vmax · gradient (4V², ברנולי) · חומרת SAS/AS.",
+   tags:[["Ao Vmax"],["best angle"],["SAS",1]]},
+
+  {g:"mid",sig:"apical4",
+   he:"שמאלי-אפיקלי, ארבעה חדרים",en:"Left Apical 4-Chamber",ab:"LA · 4CH",
+   orig:"Attempt alignment with LV apex",
+   trans:"השתדל ליישר עם קודקוד (apex) החדר השמאלי.",
+   expl:"מעבר לחלון השמאלי — הכלב מתהפך לצד ימין, המתמר באזור האפקס. ארבעת החדרים נפרשים: האפקס למעלה, LV+LA משמאל, RV+RA מימין. יישור עם האפקס האמיתי קריטי (foreshortening מעוות מדידות). זהו החלון העיקרי לכל מדידות הדופלר הבאות, כי הזרימות מקבילות לקרן.",
+   meas:"גודל ויחסי חדרים · תפקוד · בסיס לכל הדופלר האפיקלי.",
+   tags:[["4 chambers"],["apex align"],["Doppler base"]]},
+
+  // ===== GROUP apical =====
+  {g:"apical",sig:"apicalCol",
+   he:"דופלר צבע מיטרלי וטריקוספידלי",en:"Colour Doppler of MV & TV",ab:"Colour · MV/TV",
+   orig:"Assess size, direction & extent of MR & TR.",
+   trans:"הערך את הגודל, הכיוון וההיקף של הדלף המיטרלי (MR) והטריקוספידלי (TR).",
+   expl:"על האפיקלי 4CH מניחים תיבת צבע על המסתמים האטריו-ונטריקולריים. מעריכים את שטח סילון ה-MR (יחסית לשטח ה-LA), את כיווניותו (סילון אקסצנטרי → צניחת עלה ספציפי) ואת חומרתו. סילון MR מרכזי גדול = MMVD מתקדם. בסיס להערכה חצי-כמותית (PISA, vena contracta).",
+   meas:"חומרת MR (קל/בינוני/קשה) · TR · PISA · vena contracta.",
+   tags:[["MR",1],["TR",1],["PISA"]]},
+
+  {g:"apical",sig:"mvInflowPW",
+   he:"זרימה מיטרלית נכנסת — תפקוד דיאסטולי",en:"Mitral Inflow PW",ab:"PW · MV inflow",
+   orig:"Gate placed at tips of open valve. Use CW to assess MR",
+   trans:"שער (gate) ממוקם בקצות עלי המסתם הפתוח. השתמש בדופלר רציף (CW) להערכת ה-MR.",
+   expl:"שער ה-PW בקצות עלי המיטרל מודד את גלי E (מילוי מוקדם פסיבי) ו-A (התכווצות הפרוזדור) — אבני היסוד של התפקוד הדיאסטולי. יחס E/A תקין ~1–2. תבנית restrictive (E≫A) = לחץ מילוי גבוה. תבנית impaired relaxation (E<A) = הפרעת הרפיה מוקדמת. את ה-MR עצמו (מהירות גבוהה) מודדים ב-CW, שאינו מוגבל ב-aliasing.",
+   meas:"E · A · יחס E/A · IVRT · זמן הילוך (DT).",
+   tags:[["E/A"],["diastolic"],["CW for MR"]]},
+
+  {g:"apical",sig:"tvCW",
+   he:"דופלר רציף טריקוספידלי — לחץ ריאתי",en:"CW Doppler of TV",ab:"CW · TV → RVSP",
+   orig:"to estimate RV pressure, use PW to assess inflow",
+   trans:"להערכת לחץ חדר ימין; השתמש בדופלר פעימתי (PW) להערכת הזרימה הנכנסת.",
+   expl:"מהירות סילון ה-TR מאפשרת לחשב את הלחץ הסיסטולי ב-RV (RVSP) דרך משוואת ברנולי המפושטת: ΔP = 4V². RVSP גבוה (בהיעדר היצרות פולמונרית) = יתר-לחץ-דם ריאתי (PH). זהו הכלי הלא-פולשני המרכזי לאבחון וסיווג PH. ה-PW מעריך את הזרימה הטריקוספידלית הנכנסת (תפקוד דיאסטולי ימני).",
+   meas:"TR Vmax → RVSP (4V²) · סיווג חומרת PH.",
+   tags:[["RVSP"],["PH",1],["4V²"]]},
+
+  {g:"apical",sig:"apical5",
+   he:"שמאלי-אפיקלי, חמישה חדרים",en:"Apical 5-Chamber",ab:"LA · 5CH",
+   orig:"To visualise LVOT",
+   trans:"להדמיית מסלול יציאת חדר שמאל (LVOT).",
+   expl:"הטיה קדמית קלה מה-4CH 'פותחת' את ה-LVOT והאאורטה במרכז — ה'חדר החמישי'. מאפשר יישור דופלר עם הזרימה האאורטלית להערכת SAS/AS ודלף אאורטלי מהחלון השמאלי. משלים את התת-צלעי במדידת מהירות אאורטה.",
+   meas:"Aortic Vmax (אם תת-צלעי לא זמין) · AR · LVOT.",
+   tags:[["LVOT"],["Ao flow"],["AR",1]]},
+
+  // ===== GROUP lc =====
+  {g:"lc",sig:"aovCol",
+   he:"דופלר צבע של המסתם האאורטלי",en:"Colour Doppler of Aortic Valve",ab:"Colour · AoV",
+   orig:"Extend colour box to cover all AR",
+   trans:"הרחב את תיבת הצבע לכיסוי כל סילון הדלף האאורטלי (AR).",
+   expl:"דופלר-צבע על המסתם האאורטלי מאתר דלף אאורטלי (AR) — זרימה לאחור אל ה-LVOT בדיאסטולה. חובה להרחיב את התיבה לכל אורך הסילון כדי לא לזלזל בחומרה. AR מעלה חשד מיידי לאנדוקרדיטיס (במיוחד עם חום/איוושה דיאסטולית חדשה), וכן ל-SAS ולמומים מולדים.",
+   meas:"AR (אנדוקרדיטיס!) · חומרת הדלף · pressure half-time.",
+   tags:[["AR",1],["endocarditis",1],["color box"]]},
+
+  {g:"lc",sig:"aovPWCW",
+   he:"דופלר ספקטרלי של המסתם האאורטלי",en:"PW/CW of Aortic Valve",ab:"Spectral · AoV",
+   orig:"Cursor in line with blood flow, use colour to guide",
+   trans:"סמן בקו אחד עם זרימת הדם; היעזר בצבע כמדריך ליישור.",
+   expl:"מדידת מהירות האאורטה. משתמשים בדופלר-הצבע כ'מורה דרך' ליישור הסמן במקביל לזרימה (זה ההבדל בין מדידה נכונה למוטעית). נורמה Ao Vmax ~1.0–1.7 m/s (עד ~2.2 בכלבים מסוימים). מהירות גבוהה = SAS/AS. CW למהירויות הגבוהות, PW למיקום מרחבי מדויק.",
+   meas:"Ao Vmax · gradient · אבחנת SAS/AS.",
+   tags:[["Ao Vmax"],["color-guided"],["SAS/AS",1]]},
+
+  {g:"lc",sig:"lcPA",
+   he:"שמאלי-קרניאלי, עורק ריאה (2D+צבע)",en:"Left Cranial PA — 2D/Colour",ab:"LC · PA",
+   orig:"Interrogation of RVOT/PV, extend into MPA to look for PDA",
+   trans:"חקירת מוצא חדר ימין / המסתם הפולמונרי, והמשך אל גזע עורק הריאה הראשי (MPA) לחיפוש PDA.",
+   expl:"מהחלון השמאלי-קדמי, מנח זה פורש את ה-RVOT, המסתם הפולמונרי ועורק הריאה. הרחבת החקירה אל ה-MPA חיונית לאיתור PDA — צינור עורקי פתוח, המום המולד השכיח בכלבים. ב-PDA רואים זרימה רציפה וסוערת (continuous turbulent flow) ב-MPA לאורך כל מחזור הלב.",
+   meas:"PDA (continuous flow!) · PS · PI · קוטר MPA.",
+   tags:[["PDA",1],["MPA"],["continuous flow"]]},
+
+  {g:"lc",sig:"lcPApwcw",
+   he:"שמאלי-קרניאלי, דופלר ספקטרלי פולמונרי",en:"Left Cranial PA — PW/CW",ab:"Spectral · PA",
+   orig:"Align curser through valve tips",
+   trans:"ישר את הסמן דרך קצות עלי המסתם.",
+   expl:"דופלר ספקטרלי של זרימת עורק הריאה, כשהסמן דרך קצות עלי המסתם הפולמונרי. מודד מהירות פולמונרית (PS), זרימת PDA (תבנית אופיינית — מהירות גבוהה רציפה עם שיא דיאסטולי), ודלף פולמונרי (PI). מהירות סוף-הדיאסטולה של ה-PI מאפשרת הערכת הלחץ הריאתי הדיאסטולי (משלים את ה-TR לאבחון PH).",
+   meas:"PA Vmax · זרימת PDA · PI velocity → PH דיאסטולי.",
+   tags:[["PA Vmax"],["PDA flow"],["PI → PH",1]]},
+];
+
+/* ===== QUIZ DATA ===== */
+const QUIZ = [
+  {q:"באיזה מנח מודדים את יחס LA:Ao — הפרמטר המרכזי להגדלת עלייה שמאלית?",
+   o:["RPSA — LA/Ao (בסיס, 'מרצדס')","RPLA 4-Chamber","Subcostal","Left Apical 5-Chamber"],a:0,
+   fb:"בחתך הקצר בבסיס: האאורטה כ'מרצדס' וה-LA לצידה. מודדים בדיאסטולה מוקדמת; נורמה בכלב <1.6."},
+  {q:"מדוע מצמצמים את רוחב הסקטור (narrow sector) במנח ה-LVOT?",
+   o:["כדי להעלות frame rate ולראות תנועת מסתם מהירה","כדי להקטין קרינה","כדי להעמיק את החדירה","כדי להגדיל את תיבת הצבע"],a:0,
+   fb:"סקטור צר → פחות קווי סריקה → frame rate גבוה יותר. קריטי לאבחון SAM / SAS."},
+  {q:"EPSS (E-point septal separation) הוא סמן עקיף ל...",
+   o:["תפקוד סיסטולי (EF) — ככל שגדול יותר, ירוד יותר","עובי הדופן","לחץ ריאתי","חומרת MR"],a:0,
+   fb:"EPSS = מרחק נקודת E מהמחיצה. גדל כשהתפקוד הסיסטולי יורד; בלתי-תלוי בעומס."},
+  {q:"מהי הנוסחה לחישוב לחץ סיסטולי ב-RV ממהירות סילון ה-TR?",
+   o:["ΔP = 4V² (ברנולי המפושטת)","ΔP = V/2","ΔP = π r²","ΔP = LA:Ao × 10"],a:0,
+   fb:"משוואת ברנולי המפושטת: ΔP = 4V². RVSP גבוה (בלי PS) = יתר-לחץ-דם ריאתי (PH)."},
+  {q:"איזה מום מולד מחפשים בהרחבת החקירה אל ה-MPA במנח השמאלי-קרניאלי?",
+   o:["PDA — צינור עורקי פתוח","MMVD","קרדיומיופתיה מורחבת","FATE"],a:0,
+   fb:"PDA = המום המולד השכיח בכלבים. חתימתו: זרימה רציפה וסוערת ב-MPA לאורך כל המחזור."},
+  {q:"מדוע התת-צלעי (subcostal) נחשב הטוב ביותר למדידת מהירות האאורטה?",
+   o:["הוא מיישר את הסמן כמעט במקביל מושלם לזרימה","הוא הכי קרוב לעור","הוא נותן את תיבת הצבע הגדולה","הוא היחיד עם CW"],a:0,
+   fb:"יישור מקבילי לזרימה → cos θ≈1 → מהירות מקסימלית ומדויקת. חיוני להערכת חומרת SAS/AS."},
+  {q:"בחתך הקצר של ה-LV, מה מעיד על ציר נכון (לא אלכסוני)?",
+   o:["LV עגול + שני פפילריים סימטריים ('שעון 4 ו-8')","LV אליפטי","פפילרי יחיד גדול","אאורטה במרכז"],a:0,
+   fb:"חתך אלכסוני מטה את ה-FS%. דורשים LV עגול ושני פפילריים סימטריים."},
+  {q:"במנח 'RPLA With Colour', אילו זרימות מחפשים?",
+   o:["MR, TR, AR וזרימה דרך המחיצה (VSD/ASD)","רק MR","רק זרימה פולמונרית","רק PDA"],a:0,
+   fb:"דופלר-צבע על MV/TV/LVOT/AoV וה-IAS חושף את כל סילוני הדלף והזרימות החוצות-מחיצה."},
+  {q:"תבנית זרימה מיטרלית E≫A (restrictive) מעידה על...",
+   o:["לחץ מילוי גבוה ב-LA","תפקוד דיאסטולי תקין","היצרות פולמונרית","דלף אאורטלי"],a:0,
+   fb:"E גבוה בהרבה מ-A = מילוי מהיר עקב לחץ LA גבוה — תבנית מגבילה (מתקדמת)."},
+  {q:"דלף אאורטלי (AR) חדש, במיוחד עם חום, מעלה חשד מיידי ל...",
+   o:["אנדוקרדיטיס","MMVD","PDA","קרדיומיופתיה היפרטרופית"],a:0,
+   fb:"AR + חום + איוושה דיאסטולית חדשה = אנדוקרדיטיס עד שהוכח אחרת. מנח הצבע על ה-AoV קריטי."},
+];
+
+/* ===== RENDER ===== */
+function tagHTML(t){const warn=t[1]?' warn':'';return `<span class="tag${warn}">${t[0]}</span>`;}
+function viewHTML(v,i){
+  const g=GROUPS.find(x=>x.key===v.g);
+  return `<div class="view">
+    <div class="vhd">
+      <div class="vnum" style="background:${g.color}">${i+1}</div>
+      <div class="vtitles">
+        <div class="he">${v.he}</div>
+        <div class="en">${v.en}</div>
+        <div class="ab">${v.ab}</div>
+      </div>
+    </div>
+    <div class="vsig">${SIG[v.sig]()}</div>
+    <div class="vbody">
+      <div class="orig"><span class="lab">הוראה מקורית</span>${v.orig}</div>
+      <div class="block"><span class="lab trans">תרגום</span><p>${v.trans}</p></div>
+      <div class="block"><span class="lab expl">הסבר מעמיק</span><p>${v.expl}</p></div>
+      <div class="block meas"><span class="lab meas">מודדים / מחפשים</span><p>${v.meas}</p></div>
+      <div class="tags">${v.tags.map(tagHTML).join('')}</div>
+    </div>
+  </div>`;
+}
+
+// abbreviations
+document.getElementById('abbrGrid').innerHTML =
+  ABBR.map(a=>`<div class="abbr"><b>${a[0]}</b> — ${a[1].split(' — ')[1]||a[1]}</div>`).join('');
+
+// groups + views
+let gi=0;
+document.getElementById('groups').innerHTML = GROUPS.map(g=>{
+  const items = VIEWS.filter(v=>v.g===g.key);
+  const cards = items.map(v=>{const html=viewHTML(v,gi);gi++;return html;}).join('');
+  return `<div class="group">
+    <div class="group-hd"><span class="dot" style="background:${g.color}"></span>
+      <h2>${g.he}</h2><span class="en">${g.en}</span></div>
+    <div class="group-sub">${g.sub}</div>
+    <div class="grid">${cards}</div>
+  </div>`;
+}).join('');
+
+// english toggle
+document.getElementById('engToggle').addEventListener('change',e=>{
+  document.querySelectorAll('.orig').forEach(o=>o.classList.toggle('show',e.target.checked));
+});
+
+// quiz
+let answered=0,correct=0;
+document.getElementById('quizBox').innerHTML = QUIZ.map((q,qi)=>{
+  const opts=q.o.map((o,oi)=>`<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`).join('');
+  return `<div class="q"><div class="qq"><span class="qn">${qi+1}.</span>${q.q}</div>
+    <div class="opts">${opts}</div><div class="qfb" id="fb${qi}"></div></div>`;
+}).join('');
+
+document.querySelectorAll('.opt').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const qi=+btn.dataset.q, oi=+btn.dataset.o, q=QUIZ[qi];
+    const box=btn.closest('.q');
+    if(box.dataset.done) return;
+    box.dataset.done="1"; answered++;
+    box.querySelectorAll('.opt').forEach((b,bi)=>{
+      if(bi===q.a)b.classList.add('correct');
+      b.disabled=true;
+    });
+    const fb=document.getElementById('fb'+qi);
+    if(oi===q.a){correct++;fb.className='qfb good show';fb.innerHTML='✅ נכון! '+q.fb;}
+    else{btn.classList.add('wrong');fb.className='qfb good show';fb.innerHTML='❌ התשובה הנכונה מסומנת. '+q.fb;}
+    const sb=document.getElementById('scorebar');
+    sb.textContent=`ענית על ${answered}/${QUIZ.length} · נכון: ${correct}`;
+    if(answered===QUIZ.length) sb.textContent=`🎉 סיימת! ציון: ${correct}/${QUIZ.length} (${Math.round(correct/QUIZ.length*100)}%)`;
+  });
+});
+</script>
+</body>
+</html>
